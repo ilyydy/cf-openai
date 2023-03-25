@@ -1,0 +1,18 @@
+name = "openai"
+main = "src/index.ts"
+compatibility_date = "2023-03-09"
+
+# kv_namespaces = [
+#   { binding = "KV", id = "", preview_id = "" },
+# ]
+
+[vars]
+# DEBUG_MODE = "true"
+# WECHAT_ADMIN_USER_ID_LIST = "user1"
+# WECHAT_HANDLE_MS_TIME = "13000"
+# WECHAT_ID_LIST = "id1"
+# WECHAT_id1_APPID = "appid1"
+# WECHAT_id1_TOKEN = "token1"
+# WECHAT_id1_AES_KEY = "0GSZBonm7NPFCQeS2VveeOBZOHDOLHQtAP5Ai96fTwT"
+
+
