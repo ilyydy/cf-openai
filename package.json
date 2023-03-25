@@ -3,8 +3,18 @@
   "version": "0.0.0",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20230307.0",
+    "@commitlint/cli": "^17.5.0",
+    "@commitlint/config-conventional": "^17.4.4",
     "@types/lodash": "^4.14.191",
+    "@typescript-eslint/eslint-plugin": "^5.56.0",
+    "@typescript-eslint/parser": "^5.56.0",
     "@vitest/coverage-c8": "^0.29.2",
+    "@wecom/crypto": "^1.0.1",
+    "conventional-changelog-cli": "^2.2.2",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^8.36.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.0",
     "openai": "^3.2.1",
     "tsx": "^3.12.3",
     "typescript": "^4.9.5",
@@ -15,16 +25,24 @@
   "private": true,
   "scripts": {
     "local": "wrangler dev --local -c wrangler.dev.toml",
-    "start": "wrangler dev -c wrangler.dev.toml",
+    "start": "proxychains wrangler dev -c wrangler.dev.toml",
     "deploy": "wrangler publish -c wrangler.prod.toml",
-    "lint": "vitest",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "lint:check": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore",
     "test": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "changelog": "conventional-changelog -p angular -r 0 -t csdn@ --commit-path $PWD --pkg package.json -i CHANGELOG.md -s",
+    "prepare": "husky install"
   },
   "dependencies": {
     "fast-xml-parser": "^4.1.3",
     "js-base64": "^3.7.5",
     "lodash": "^4.17.21",
     "zod": "^3.21.4"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
   }
 }

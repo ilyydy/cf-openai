@@ -2,6 +2,26 @@
 
 PROJECT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
+local() {
+  npm run local
+}
+
+start() {
+  npm run start
+}
+
+deploy() {
+  npm run deploy
+}
+
+lint() {
+  npm run lint
+}
+
+changelog() {
+  npm run changelog
+}
+
 vtest() {
   if [ -z "$1" ]; then
     npm test

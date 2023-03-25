@@ -1,0 +1,4 @@
+{
+  "$schema": "https://json.schemastore.org/lintstagedrc.schema.json",
+  "*.{ts,js,tsx,jsx,vue}": ["eslint --cache --fix"]
+}
