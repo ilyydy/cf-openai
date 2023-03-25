@@ -41,7 +41,7 @@ export async function catchWithDefault<T, K>(
     if (res instanceof Promise) {
       return await res
     }
-    return res as T
+    return res
   } catch (e) {
     return defaultValue
   }
@@ -81,7 +81,9 @@ export const logger = {
     ).toISOString()} ERROR ${msg}`
     console.log(_msg)
     sendAlarmMsg(_msg).catch((error) => {
-      console.error(`${MODULE} sendAlarmMsg fail ${errorToString(error)}`)
+      console.error(
+        `${MODULE} sendAlarmMsg fail ${errorToString(error as Error)}`
+      )
     })
   },
 }
@@ -220,7 +222,7 @@ export function concatUint8Array(arrays: Uint8Array[]) {
   // for each array - copy it over result
   // next array is copied right after the previous one
   let length = 0
-  for (let array of arrays) {
+  for (const array of arrays) {
     result.set(array, length)
     length += array.length
   }
@@ -259,15 +261,16 @@ export function parseXmlMsg<T = any>(xmlMsg: string) {
 }
 
 export function mergeFromEnv<T extends Record<string, any>>(env: Env, obj: T) {
-  const _obj = obj as any
+  const _obj = obj as Record<string, any>
+  const _env = env as unknown as Record<string, string | undefined>
 
   for (const [key, defaultValue] of Object.entries(_obj)) {
-    let valueInEnv: string | undefined = (env as Record<string, any>)[key]
+    let valueInEnv = _env[key]
     if (valueInEnv === undefined) continue
     valueInEnv = valueInEnv.trim()
 
     switch (typeof defaultValue) {
-      case 'number':
+      case 'number': {
         const num = Number.parseInt(valueInEnv)
         if (Number.isFinite(num)) {
           _obj[key] = num
@@ -275,6 +278,7 @@ export function mergeFromEnv<T extends Record<string, any>>(env: Env, obj: T) {
           logger.error(`${MODULE} key ${key} invalid num ${valueInEnv}`)
         }
         break
+      }
       case 'boolean':
         if (!['false', 'true'].includes(valueInEnv)) {
           logger.error(`${MODULE} key ${key} invalid bool ${valueInEnv}`)
@@ -290,7 +294,8 @@ export function mergeFromEnv<T extends Record<string, any>>(env: Env, obj: T) {
           _obj[key] = valueInEnv.split(',')
         } else {
           try {
-            _obj[key] = JSON.parse(valueInEnv)
+            const v = JSON.parse(valueInEnv) as Record<string, any>
+            _obj[key] = v
           } catch (e) {
             logger.error(`${MODULE} key ${key} invalid obj ${valueInEnv}`)
           }

@@ -13,9 +13,9 @@ export async function handleRequest(
   platformType: string,
   id: string
 ) {
-  const handlerClass: HandlerClass | undefined = (handlerMap as any)[
-    platformType
-  ]
+  const handlerClass = (
+    handlerMap as { [type: string]: HandlerClass | undefined }
+  )[platformType]
   if (!handlerClass) {
     return genMyErrResponse(errCodeMap.INVALID_PLATFORM)
   }

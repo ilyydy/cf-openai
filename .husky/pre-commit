@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# @see https://github.com/typicode/husky/issues/1200#issuecomment-1272893680
+if [ -t 2 ]; then
+  exec >/dev/tty 2>&1
+fi
+npx lint-staged

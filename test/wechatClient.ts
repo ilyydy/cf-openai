@@ -3,6 +3,8 @@ import _ from 'lodash'
 import { XMLBuilder, XMLParser, XMLValidator } from 'fast-xml-parser'
 import crypto from 'crypto'
 
+import type { webcrypto } from 'crypto'
+
 import {
   getTextDecoder,
   getTextEncoder,
@@ -23,7 +25,7 @@ async function shaDigest(algorithm: string, input: string) {
 
 class Client {
   private _aesKeyInfo: {
-    key: CryptoKey // 已经导入的 CryptoKey 格式密钥
+    key: webcrypto.CryptoKey // 已经导入的 CryptoKey 格式密钥
     iv: Uint8Array // 初始向量大小为16字节，取AESKey前16字节
   } | null = null
 
@@ -175,7 +177,7 @@ class Client {
     const { iv, key } = await this.getAesKeyInfo()
     const arrBuffer = await crypto.subtle.encrypt(
       { name: 'AES-CBC', iv },
-      key as any,
+      key,
       concatenatedArray
     )
 
@@ -194,7 +196,7 @@ class Client {
 
     const arrBuffer = await crypto.subtle.decrypt(
       { name: 'AES-CBC', iv },
-      key as any,
+      key,
       Base64.toUint8Array(encryptContent) // base64 到 Uint8Array
       // 只能在 node 使用
       // Buffer.from(encryptContent, 'base64')
@@ -227,8 +229,8 @@ class Client {
    * @param xmlMsg 微信 xml 消息
    */
   async parseRecvXmlMsg(xmlMsg: string) {
-    const xmlObj = this.xmlParser.parse(xmlMsg).xml
-    console.log(xmlObj)
+    const root = this.xmlParser.parse(xmlMsg) as { xml: Record<string, string> }
+    const xmlObj = root.xml
     const {
       Encrypt: encrypt,
       MsgSignature: msgSignature,
@@ -236,7 +238,11 @@ class Client {
       Nonce: nonce,
     } = xmlObj
 
-    const mySignature = await this.getSignature(`${timestamp}`, `${nonce}`, encrypt)
+    const mySignature = await this.getSignature(
+      `${timestamp}`,
+      `${nonce}`,
+      encrypt
+    )
     if (mySignature !== msgSignature) {
       throw new Error(
         `消息签名不对 mySignature ${mySignature} msgSignature ${msgSignature}`
@@ -278,4 +284,4 @@ async function test() {
   const recv = await client.sendTextMsg({ msg, fromUserName, encrypt })
 }
 
-test()
+// test()

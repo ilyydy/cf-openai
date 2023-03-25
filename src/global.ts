@@ -46,8 +46,8 @@ export const CONFIG: GlobalConfig = {
 
 const store: { [key: string]: any } = {}
 
-export function setStore(key: string, value: any) {
-  return (store[key] = value)
+export function setStore<T>(key: string, value: T) {
+  store[key] = value
 }
 
 export function getStore<T>(key: string) {

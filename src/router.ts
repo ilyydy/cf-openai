@@ -7,7 +7,7 @@ import type { Env, MyRequest } from './types'
 const MODULE = 'src/router.ts'
 
 // /openai/${platform}/${id}
-export const openAiPathReg = /^\/openai\/([^\/]+)\/([^\/]+)$/
+export const openAiPathReg = /^\/openai\/([^/]+)\/([^/]+)$/
 
 export async function handleRequest(
   request: Request,

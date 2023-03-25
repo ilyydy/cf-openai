@@ -3,10 +3,12 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest'
 import * as utils from './utils'
 import { CONST } from './global'
 
-describe('src/utils', () => {
-  beforeAll(async () => {})
+import type { Env } from "./types"
 
-  afterAll(async () => {})
+describe('src/utils', () => {
+  // beforeAll(async () => {})
+
+  // afterAll(async () => {})
 
   it('sha1 should ok', async () => {
     const text = 'hello123'
@@ -16,14 +18,14 @@ describe('src/utils', () => {
     expect(result).toBe(digest)
   })
 
-  it('mergeFromEnv should ok', async () => {
+  it('mergeFromEnv should ok', () => {
     const env = {
       a: 'aa',
       b: '2',
       c: '3,4',
       d: 'true',
       e: JSON.stringify({ e: 'ok' }),
-    } as any
+    }
     const obj = {
       a: 'a',
       b: 1,
@@ -41,7 +43,7 @@ describe('src/utils', () => {
       f: 1,
     }
 
-    utils.mergeFromEnv(env, obj)
+    utils.mergeFromEnv(env as unknown as Env, obj)
     expect(obj).toStrictEqual(expectOjb)
   })
 })

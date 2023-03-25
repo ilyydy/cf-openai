@@ -7,7 +7,7 @@ const { TIME } = CONST
 
 export async function set(
   key: string,
-  value: any,
+  value: string | ArrayBuffer | ArrayBufferView | ReadableStream<any>,
   options: KVNamespacePutOptions = { expirationTtl: TIME.ONE_DAY }
 ) {
   try {

@@ -40,11 +40,13 @@ export class WeChatHandler extends Base<WeChat> {
     const plainXmlMsg = await promise
     if (this.platform.ctx.isEncrypt) {
       const genRes = await this.platform.genSendEncryptXmlMsg(plainXmlMsg)
+      this.logger.debug(`${MODULE} 加密回复 ${JSON.stringify(genRes)}`)
       return genRes.success
         ? genMyResponse(genRes.data)
         : genMyResponse('服务异常')
     }
 
+    this.logger.debug(`${MODULE} 明文回复 ${plainXmlMsg}`)
     return genMyResponse(plainXmlMsg)
   }
 
@@ -82,7 +84,7 @@ export class WeChatHandler extends Base<WeChat> {
     this.ctx.isRequestOpenAi = true
     if (!this.ctx.apiKey) {
       return this.platform.genSendTextXmlMsg(
-        `未绑定 openAi api key，请先使用 ${commandName.bindKey} 命令进行绑定`
+        `未绑定 OpenAI api key，请先使用 ${commandName.bindKey} 命令进行绑定`
       )
     }
 
