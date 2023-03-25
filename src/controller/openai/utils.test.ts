@@ -3,16 +3,16 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest'
 import * as utils from './utils'
 
 describe('src/controller/openai/utils.ts', () => {
-  beforeAll(async () => {})
+  // beforeAll(async () => {})
 
-  afterAll(async () => {})
+  // afterAll(async () => {})
 
-  it('get api key with mask', async () => {
+  it('get api key with mask', () => {
     const key = 'sf-abcdef123xx6hls5dgs'
     expect(utils.getApiKeyWithMask(key)).toBe('sf-abc****5dgs')
   })
 
-  it('estimate token count', async () => {
+  it('estimate token count', () => {
     const tests = [
       ['Hello, how is the weather tomorrow?', 8],
       ['你好，明天天气怎么样', 19],

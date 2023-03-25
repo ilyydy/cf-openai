@@ -2,6 +2,8 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest'
 
 import * as wechat from './wechat'
 
+import type { Env } from "../types"
+
 describe('src/platform/wechat.ts', () => {
   let webchatInstance: wechat.WeChat
 
@@ -38,17 +40,17 @@ describe('src/platform/wechat.ts', () => {
     MsgId: '6054768590064713728',
   } as const
 
-  beforeAll(async () => {
+  beforeAll(() => {
     webchatInstance = new wechat.WeChat(
       {
         body: '',
-        ctx: {} as any,
+        ctx: {} as ExecutionContext,
         headers: {},
         method: '',
         reqId: '',
         url,
         urlObj: new URL(url),
-        env: {} as any,
+        env: {} as Env,
       },
       id
     )
@@ -59,7 +61,7 @@ describe('src/platform/wechat.ts', () => {
     webchatInstance.ctx.recvMsg = recvPlainMsg
   })
 
-  afterAll(async () => {})
+  // afterAll(async () => {})
 
   it('http get', async () => {
     const res = await webchatInstance.handleGet()

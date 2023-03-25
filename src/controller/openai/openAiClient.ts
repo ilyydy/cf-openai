@@ -1,3 +1,5 @@
+import _ from 'lodash'
+
 import { CONFIG } from './config'
 import { errorToString, genFail, genSuccess } from '../../utils'
 
@@ -23,7 +25,7 @@ export interface Usage {
   }[]
 }
 
-export const finishReasonMap = {
+export const finishReasonMap: { [key: string]: string } = {
   length: '长度限制',
 }
 
@@ -70,12 +72,15 @@ export class OpenAiClient {
         signal: controller.signal,
       })
 
-      const json: any = await resp.json()
-      this.logger.debug(`${MODULE} OpenAI 回复 ${Date.now() - start} ${JSON.stringify(json)}`)
+      const json = await resp.json()
+      this.logger.debug(
+        `${MODULE} OpenAI 回复 ${Date.now() - start} ${JSON.stringify(json)}`
+      )
 
-      if (json.error?.message) {
-        this.logger.error(`${MODULE} OpenAI 错误 ${json.error.message}`)
-        return genFail(`OpenAI 错误\n> ${json.error.message}`)
+      const errMsg = _.get(json, 'error.message', '')
+      if (!errMsg) {
+        this.logger.error(`${MODULE} OpenAI 错误 ${errMsg}`)
+        return genFail(`OpenAI 错误\n> ${errMsg}`)
       }
 
       return genSuccess(json as T)
@@ -159,8 +164,7 @@ export class OpenAiClient {
         msg: first.text,
         finishReason: first.finish_reason ?? 'unknown',
         finishReasonZh:
-          ((finishReasonMap as any)[first.finish_reason as string] as string) ??
-          '未知',
+          finishReasonMap[first.finish_reason as string] ?? '未知',
       })
     }
 
@@ -192,8 +196,7 @@ export class OpenAiClient {
         msg: first.message,
         finishReason: first.finish_reason || 'unknown',
         finishReasonZh:
-          ((finishReasonMap as any)[first.finish_reason as string] as string) ??
-          '未知',
+          finishReasonMap[first.finish_reason as string] ?? '未知',
       })
     }
 

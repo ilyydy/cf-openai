@@ -26,11 +26,11 @@ import type { Logger } from '../../../utils'
 const MODULE = 'src/openai/platform/base.ts'
 
 export const defaultCtx = {
-  apiKey: '', // 用户的 openAi apiKey
+  apiKey: '', // 用户的 OpenAI apiKey
   role: CONST.ROLE.GUEST as Role,
   chatType: '单聊' as ChatType,
   conversationId: '',
-  isRequestOpenAi: false, // 收到的消息是命令还是请求 OpenAi
+  isRequestOpenAi: false, // 收到的消息是命令还是请求 OpenAI
 }
 
 export abstract class Base<T extends Platform> {
@@ -383,7 +383,7 @@ export abstract class Base<T extends Platform> {
         )
       } else {
         this.logger.info(
-          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${lastChatPromptRes.data?.msgId}`
+          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${lastChatPromptRes.data?.msgId ?? ''}`
         )
       }
     }
@@ -398,24 +398,23 @@ export abstract class Base<T extends Platform> {
       fn: this.getHelpMsg.bind(this),
     },
     [commandName.bindKey]: {
-      description:
-        `绑定 openAi api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 ${commandName.testKey} 命令测试是否正常可用`,
+      description: `绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 ${commandName.testKey} 命令测试是否正常可用`,
       roles: [CONST.ROLE.GUEST, CONST.ROLE.USER, CONST.ROLE.ADMIN],
       fn: this.bindKey.bind(this),
     },
     [commandName.unbindKey]: {
-      description: '解绑 openAi api key',
+      description: '解绑 OpenAI api key',
       roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
       fn: this.unbindKey.bind(this),
     },
     [commandName.testKey]: {
       description:
-        '调用 openAi 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量',
+        '调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量',
       roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
       fn: this.testKey.bind(this),
     },
     [commandName.setChatType]: {
-      description: `切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 openAi，消耗更多用量`,
+      description: `切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量`,
       roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
       fn: this.setChatType.bind(this),
     },
@@ -500,7 +499,7 @@ export abstract class Base<T extends Platform> {
       .min(CONFIG.OPEN_AI_API_KEY_MIN_LEN)
       .safeParse(key)
     if (!checkRes.success) {
-      return genFail(`openAi key 格式不合法`)
+      return genFail(`OpenAI api key 格式不合法`)
     }
     const r = await kv.setApiKey(platform, appid, userId, key)
     if (!r.success) {
@@ -527,7 +526,7 @@ export abstract class Base<T extends Platform> {
     return genSuccess('测试成功')
   }
 
-  protected async setChatType(params: any) {
+  protected setChatType(params: string) {
     if (params !== '单聊' && params !== '串聊') {
       return genFail(`输入不合法，应输入'单聊'或'串聊'，请重新输入`)
     }
@@ -545,7 +544,7 @@ export abstract class Base<T extends Platform> {
     return genSuccess('建立新串聊成功')
   }
 
-  protected async retry(msgId: any) {
+  protected async retry(msgId: string) {
     const { platform, userId, appid } = this.platform.ctx
 
     if (!msgId || !msgId.trim()) {
@@ -597,7 +596,7 @@ export abstract class Base<T extends Platform> {
     return genSuccess(msg)
   }
 
-  protected async commandSystem(params: any) {
+  protected commandSystem(params: any) {
     const { platform, userId, appid } = this.platform.ctx
     const { apiKey, conversationId } = this.ctx
     const msgList = [
@@ -631,6 +630,7 @@ export abstract class Base<T extends Platform> {
 
         try {
           const r = await commandObj.fn(params)
+          this.logger.debug(`${MODULE} 命令执行结果 ${JSON.stringify(r)}`)
           return r
         } catch (error) {
           this.logger.error(
@@ -682,7 +682,7 @@ export const faqList = [
   `一些平台会限制回复用户消息的最大等待时间，如微信限制 15 秒内必须回复否则提示公众号服务故障，而 OpenAI 可能需要更长时间处理，这种情况会先返回提示消息，在后台继续处理`,
   `串聊会带上历史消息，一方面会消耗更多用量，另一方面容易达到 OpenAI 消息总长上限，应常用使用命令 ${commandName.newChat} 清除历史`,
   '串聊避免短时间连续提问，会影响历史消息连贯性',
-  '串聊历史记录不使用则最长保留一天，openAi api key 不使用最长保留一个月',
+  '串聊历史记录不使用则最长保留一天，OpenAI api key 不使用最长保留一个月',
 ]
 
 export function getFaqMsg() {

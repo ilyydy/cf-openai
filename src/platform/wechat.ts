@@ -67,9 +67,9 @@ export class WeChat implements Platform<WeChatMsg> {
   }
 
   init() {
-    const env = this.request.env as any
-    mergeFromEnv(env, CONFIG)
+    mergeFromEnv(this.request.env, CONFIG)
 
+    const env = this.request.env as unknown as Record<string, string>
     this.ctx.appid = env[`WECHAT_${this.id}_APPID`] ?? ''
     this.ctx.token = env[`WECHAT_${this.id}_TOKEN`] ?? ''
 
@@ -84,14 +84,14 @@ export class WeChat implements Platform<WeChatMsg> {
   }
 
   /**
-   * 处理来自微信的请求
+   * 处理来自微信的请求 TODO 事件处理
    * @see https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Receiving_standard_messages.html
    * @param handleRecvMsg 处理微信发来的 xml 明文消息，返回微信需要的 xml 明文消息
    * @param genTimeoutResponse 控制超时时如何回复
    */
   async handleRequest(
     handleRecvMsg: HandleRecvMsg<WeChatMsg>,
-    genTimeoutResponse = async () =>
+    genTimeoutResponse: () => Promise<MyResponse> | MyResponse = () =>
       genMyResponse(this.genSendTextXmlMsg('正在处理中'))
   ) {
     // 微信最多等 15 秒
@@ -130,12 +130,14 @@ export class WeChat implements Platform<WeChatMsg> {
       }
 
       const parseRes = await this.parseRecvXmlMsg(this.request.body)
+      this.logger.debug(`${MODULE} 解析收到消息 ${JSON.stringify(parseRes)}`)
       if (!parseRes.success) {
         return genMyResponse('解析消息失败', { status: 400 })
       }
       const { recvPlainMsg, isEncrypt } = parseRes.data
       this.ctx.recvMsg = recvPlainMsg
-      this.ctx.isEncrypt = isEncrypt
+      // TODO 微信加密回复有问题，直接明文回复
+      // this.ctx.isEncrypt = isEncrypt
       this.ctx.userId = recvPlainMsg.FromUserName
       this.ctx.developerId = recvPlainMsg.ToUserName
 
@@ -237,6 +239,7 @@ export class WeChat implements Platform<WeChatMsg> {
    * AES 解密微信 xml 消息中 <Encrypt> 块内容
    * @see https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Message_encryption_and_decryption_instructions.html
    * @see https://developer.work.weixin.qq.com/document/path/96211
+   * @see https://www.npmjs.com/package/@wecom/crypto
    * @see https://github.com/keel/aes-cross/tree/master/info-cn
    * @param encryptContent 从 xml <Encrypt> 块中取出的内容，加密处理后的Base64编码
    */
@@ -288,6 +291,7 @@ export class WeChat implements Platform<WeChatMsg> {
    * AES 加密明文为微信 xml 消息中 <Encrypt> 块内容
    * @see https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Message_encryption_and_decryption_instructions.html
    * @see https://developer.work.weixin.qq.com/document/path/96211
+   * @see https://www.npmjs.com/package/@wecom/crypto
    * @see https://github.com/keel/aes-cross/tree/master/info-cn
    * @param plainContent utf8 明文
    */
@@ -305,26 +309,11 @@ export class WeChat implements Platform<WeChatMsg> {
         false
       )
       const appidUint8Array = getTextEncoder().encode(this.ctx.appid)
-
-      // 补位
-      const blockSize = 32
-      const msgLength =
-        random16.length +
-        contentUint8Array.length +
-        msgUint8Array.length +
-        appidUint8Array.length
-
-      // 计算需要填充的位数
-      const amountToPad = blockSize - (msgLength % blockSize)
-      const padUint8Array = new Uint8Array(amountToPad)
-      padUint8Array.fill(amountToPad)
-
       const concatenatedArray = concatUint8Array([
         random16,
         msgUint8Array,
         contentUint8Array,
         appidUint8Array,
-        padUint8Array,
       ])
 
       const keyRes = await this.getAesKeyInfo()
@@ -353,10 +342,12 @@ export class WeChat implements Platform<WeChatMsg> {
    * @param xmlMsg 微信 xml 消息
    */
   async parseRecvXmlMsg<T = RecvPlainMsg>(xmlMsg: string) {
-    const res = parseXmlMsg(xmlMsg)
+    const res = parseXmlMsg<{ xml: RecvPlainMsg | RecvEncryptMsg | undefined }>(
+      xmlMsg
+    )
     if (!res.success) return res
 
-    const xmlObj = res.data.xml as RecvPlainMsg | RecvEncryptMsg | undefined
+    const xmlObj = res.data.xml
     if (!xmlObj) {
       this.logger.debug(`${MODULE} 微信消息为空 ${xmlMsg}`)
       return genFail('微信消息为空')
@@ -374,7 +365,9 @@ export class WeChat implements Platform<WeChatMsg> {
       const mySignature = await shaDigest('SHA-1', tmpStr)
       if (mySignature !== msgSignature) {
         this.logger.debug(
-          `${MODULE} 消息签名不对 tmpStr ${tmpStr} mySignature ${mySignature} msgSignature ${msgSignature}`
+          `${MODULE} 消息签名不对 tmpStr ${tmpStr} mySignature ${mySignature} msgSignature ${
+            msgSignature ?? ''
+          }`
         )
         return genFail('微信消息签名不对')
       }
@@ -390,10 +383,14 @@ export class WeChat implements Platform<WeChatMsg> {
         )
         return genFail('微信消息中 appid 不符')
       }
-      const v = (await this.parseRecvXmlMsg(plainXmlMsg)) as Result<
-        { recvPlainMsg: T; isEncrypt: boolean },
-        undefined
-      >
+      const v = (await this.parseRecvXmlMsg<RecvPlainMsg>(plainXmlMsg)) as {
+        success: boolean
+        data: {
+          isEncrypt: boolean
+          recvPlainMsg: RecvPlainMsg
+        }
+        msg: string
+      }
 
       if (v.success) {
         v.data.isEncrypt = true
@@ -463,7 +460,8 @@ export class WeChat implements Platform<WeChatMsg> {
   ) {
     const { FromUserName, ToUserName } = this.ctx.recvMsg
 
-    const msg = `<xml><ToUserName><![CDATA[${FromUserName}]]></ToUserName>
+    const msg = `<xml>
+<ToUserName><![CDATA[${FromUserName}]]></ToUserName>
 <FromUserName><![CDATA[${ToUserName}]]></FromUserName>
 <CreateTime>${options.timestamp}</CreateTime>
 <MsgType><![CDATA[text]]></MsgType>
