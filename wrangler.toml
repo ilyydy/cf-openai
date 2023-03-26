@@ -1,18 +1,22 @@
+# 模板文件，需修改为实际配置值后才能使用
+
 name = "openai"
 main = "src/index.ts"
 compatibility_date = "2023-03-09"
 
-# kv_namespaces = [
-#   { binding = "KV", id = "", preview_id = "" },
-# ]
+kv_namespaces = [
+  { binding = "KV", id = "你创建的KV命名空间的ID" },
+]
 
 [vars]
-# DEBUG_MODE = "true"
-# WECHAT_ADMIN_USER_ID_LIST = "user1"
-# WECHAT_HANDLE_MS_TIME = "13000"
-# WECHAT_ID_LIST = "id1"
-# WECHAT_id1_APPID = "appid1"
-# WECHAT_id1_TOKEN = "token1"
-# WECHAT_id1_AES_KEY = "0GSZBonm7NPFCQeS2VveeOBZOHDOLHQtAP5Ai96fTwT"
+# 微信公众号必配的
+WECHAT_ID_LIST = "id1"
+WECHAT_id1_APPID = "appid1"
+# 若想提高安全性，可注释下行，在 Cloudflare Worker 中以 Secret 模式配置 WECHAT_id1_TOKEN
+WECHAT_id1_TOKEN = "token1"
 
+# 微信公众号推荐配置的
+WECHAT_ADMIN_USER_ID_LIST = "user1"
 
+# 微信公众号开启安全模式或兼容模式时要配的。若想提高安全性，可注释下行，在 Cloudflare Worker 中以 Secret 模式配置 WECHAT_id1_AES_KEY
+WECHAT_id1_AES_KEY = "EncodingAESKey"
