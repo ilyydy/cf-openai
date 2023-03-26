@@ -6,6 +6,17 @@
 
 基于 Cloudflare Worker 代理访问 OpenAI API 的服务，目前支持微信公众号(同时多个)接入
 
+- [cf-openai](#cf-openai)
+  - [基本要求](#基本要求)
+  - [Cloudflare Worker 部署](#cloudflare-worker-部署)
+    - [Cloudflare 界面部署](#cloudflare-界面部署)
+    - [Github Action 部署](#github-action-部署)
+    - [本地命令行部署](#本地命令行部署)
+  - [微信公众号接入配置](#微信公众号接入配置)
+  - [可用命令](#可用命令)
+  - [OpenAI 配置](#openai-配置)
+  - [已知问题](#已知问题)
+
 ## 基本要求
 
 - 注册 OpenAI 账号，创建复制 API key
