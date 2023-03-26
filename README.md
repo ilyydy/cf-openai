@@ -2,6 +2,7 @@
 
 [![LICENSE](https://img.shields.io/github/license/ilyydy/cf-openai)](https://github.com/ilyydy/cf-openai/blob/main/LICENSE)
 [![ci test](https://github.com/ilyydy/cf-openai/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/ilyydy/cf-openai/actions/workflows/test.yml)
+[![CodeQL](https://github.com/ilyydy/cf-openai/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/ilyydy/cf-openai/actions/workflows/github-code-scanning/codeql)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 
 基于 Cloudflare Worker 代理访问 OpenAI API 的服务，目前支持微信公众号(同时多个)接入
