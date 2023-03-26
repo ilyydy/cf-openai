@@ -23,6 +23,7 @@ jobs:
           cat << 'EOF' > wrangler.toml
           ${{secrets.WRANGLER_TOML}} 
           EOF
+      - run: npm ci
       - name: Publish
         uses: cloudflare/wrangler-action@2.0.0
         with:
