@@ -24,7 +24,7 @@ const MODULE = 'src/openai/platform/base.ts'
 
 export const defaultCtx = {
   apiKey: '', // 用户的 OpenAI apiKey
-  role: CONST.ROLE.GUEST as Role,
+  role: new Set(CONST.ROLE.GUEST) as Set<Role>,
   chatType: '单聊' as ChatType,
   conversationId: '',
   isRequestOpenAi: false, // 收到的消息是命令还是请求 OpenAI
@@ -467,17 +467,16 @@ export abstract class Base<T extends Platform> {
     if (subcommand) {
       const obj = this.commands[subcommand]
       const roles = obj.roles as Role[]
-      if (!obj || !roles.includes(role)) {
+      if (!obj || roles.every(i => !role.has(i))) {
         return genFail(`命令 ${subcommand} 不存在`)
       }
       cmdList.push({ name: subcommand, description: obj.description })
     } else {
       Object.entries(this.commands).forEach(([name, obj]) => {
         const roles = obj.roles as Role[]
-        if (!roles.includes(role)) {
-          return
+        if (roles.some(i => role.has(i))) {
+          cmdList.push({ name, description: obj.description })
         }
-        cmdList.push({ name, description: obj.description })
       })
     }
 
@@ -620,7 +619,7 @@ export abstract class Base<T extends Platform> {
   protected async handleCommandMessage(message: string) {
     for (const [command, commandObj] of Object.entries(this.commands)) {
       const roles = commandObj.roles as Role[]
-      if (!roles.includes(this.ctx.role)) continue
+      if (roles.every(i => !this.ctx.role.has(i))) continue
       if (message === command || message.startsWith(`${command} `)) {
         const params = message.slice(command.length).trim()
         this.logger.info(`${MODULE} 执行命令 ${command} 参数 ${params}`)
@@ -647,7 +646,7 @@ export abstract class Base<T extends Platform> {
       id: this.platform.id,
       reqId: this.request.reqId,
       userId: this.platform.ctx.userId,
-      role: this.ctx.role,
+      role: Array.from(this.ctx.role).join(','),
       chatType: this.ctx.chatType,
     })
     this.platform.logger = logger
