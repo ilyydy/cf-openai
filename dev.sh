@@ -2,16 +2,12 @@
 
 PROJECT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
-local() {
-  npm run local
+build() {
+  npm run build
 }
 
-start() {
-  npm run start
-}
-
-deploy() {
-  npm run deploy
+buildm() {
+  npm run build-mini
 }
 
 lint() {
