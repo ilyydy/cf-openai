@@ -1,5 +1,3 @@
-import _ from 'lodash'
-
 import { CONFIG } from './config'
 import { errorToString, genFail, genSuccess } from '../../utils'
 
@@ -72,15 +70,14 @@ export class OpenAiClient {
         signal: controller.signal,
       })
 
-      const json = await resp.json()
+      const json = await resp.json<Record<string, any>>()
       this.logger.debug(
         `${MODULE} OpenAI 回复 ${Date.now() - start} ${JSON.stringify(json)}`
       )
 
-      const errMsg = _.get(json, 'error.message', '')
-      if (!errMsg) {
-        this.logger.error(`${MODULE} OpenAI 错误 ${errMsg}`)
-        return genFail(`OpenAI 错误\n> ${errMsg}`)
+      if ('error' in json && json.error) {
+        this.logger.error(`${MODULE} OpenAI 错误 ${JSON.stringify(json.error)}`)
+        return genFail(`OpenAI 错误\n> ${(json.error as Error).message}`)
       }
 
       return genSuccess(json as T)

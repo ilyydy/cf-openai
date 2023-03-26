@@ -1,6 +1,3 @@
-import _ from 'lodash'
-import { z } from 'zod'
-
 import {
   genFail,
   genSuccess,
@@ -34,7 +31,7 @@ export const defaultCtx = {
 }
 
 export abstract class Base<T extends Platform> {
-  readonly ctx = _.cloneDeep(defaultCtx)
+  readonly ctx = { ...defaultCtx }
   readonly request: MyRequest
   readonly platform: T
   logger: Logger
@@ -116,7 +113,7 @@ export abstract class Base<T extends Platform> {
       const r = await openai.createChatCompletion([
         {
           role: 'system',
-          content: CONFIG.SYSTEM_INIT_MESSAGE(),
+          content: CONFIG.SYSTEM_INIT_MESSAGE,
         },
         {
           role: 'user',
@@ -230,7 +227,7 @@ export abstract class Base<T extends Platform> {
       msgContent,
     } = params
 
-    const initMsg = CONFIG.SYSTEM_INIT_MESSAGE()
+    const initMsg = CONFIG.SYSTEM_INIT_MESSAGE
     const initMsgTokenCount = estimateTokenCount(initMsg)
 
     const newHistory: kv.HistoryMsg[] = [
@@ -383,7 +380,9 @@ export abstract class Base<T extends Platform> {
         )
       } else {
         this.logger.info(
-          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${lastChatPromptRes.data?.msgId ?? ''}`
+          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${
+            lastChatPromptRes.data?.msgId ?? ''
+          }`
         )
       }
     }
@@ -492,16 +491,14 @@ export abstract class Base<T extends Platform> {
 
   protected async bindKey(key: string) {
     const { platform, userId, appid } = this.platform.ctx
-    const checkRes = z
-      .string()
-      .trim()
-      .max(CONFIG.OPEN_AI_API_KEY_MAX_LEN)
-      .min(CONFIG.OPEN_AI_API_KEY_MIN_LEN)
-      .safeParse(key)
-    if (!checkRes.success) {
-      return genFail(`OpenAI api key 格式不合法`)
+    if (
+      typeof key !== 'string' ||
+      key.trim().length > CONFIG.OPEN_AI_API_KEY_MAX_LEN ||
+      key.trim().length < CONFIG.OPEN_AI_API_KEY_MIN_LEN
+    ) {
+      return genFail(`绑定失败 key 格式不合法`)
     }
-    const r = await kv.setApiKey(platform, appid, userId, key)
+    const r = await kv.setApiKey(platform, appid, userId, key.trim())
     if (!r.success) {
       return genFail(`绑定失败 ${r.msg}`)
     }
@@ -610,7 +607,7 @@ export abstract class Base<T extends Platform> {
       msgList.push(
         `OpenAI 参数: ${JSON.stringify(CONFIG.OPEN_AI_API_EXTRA_PARAMS)}`
       )
-      msgList.push(`初始化文本: ${CONFIG.SYSTEM_INIT_MESSAGE()}`)
+      msgList.push(`初始化文本: ${CONFIG.SYSTEM_INIT_MESSAGE}`)
       msgList.push(`当前 reqId: ${this.request.reqId}`)
       if (conversationId) msgList.push(`当前 conversationId: ${conversationId}`)
       // TODO 更多信息

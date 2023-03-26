@@ -1,5 +1,3 @@
-import _ from 'lodash'
-
 import type { Env, GlobalConfig } from './types'
 
 const MODULE = 'src/global.ts'

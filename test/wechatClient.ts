@@ -1,6 +1,4 @@
-import { Base64 } from 'js-base64'
-import _ from 'lodash'
-import { XMLBuilder, XMLParser, XMLValidator } from 'fast-xml-parser'
+import { XMLParser } from 'fast-xml-parser'
 import crypto from 'crypto'
 
 import type { webcrypto } from 'crypto'
@@ -9,7 +7,8 @@ import {
   getTextDecoder,
   getTextEncoder,
   concatUint8Array,
-  sleep,
+  base64ToUint8Array,
+  uint8ArrayToBase64,
 } from '../src/utils'
 
 async function shaDigest(algorithm: string, input: string) {
@@ -105,7 +104,7 @@ class Client {
    * @see https://developer.work.weixin.qq.com/document/path/96211
    */
   async importWeChatAesKey() {
-    const keyInUint8Array = Base64.toUint8Array(this.encodingAESKey + '=')
+    const keyInUint8Array = base64ToUint8Array(this.encodingAESKey + '=')
 
     const key = await crypto.subtle.importKey(
       'raw',
@@ -181,7 +180,7 @@ class Client {
       concatenatedArray
     )
 
-    return Base64.fromUint8Array(new Uint8Array(arrBuffer))
+    return uint8ArrayToBase64(new Uint8Array(arrBuffer))
   }
 
   /**
@@ -197,7 +196,7 @@ class Client {
     const arrBuffer = await crypto.subtle.decrypt(
       { name: 'AES-CBC', iv },
       key,
-      Base64.toUint8Array(encryptContent) // base64 到 Uint8Array
+      base64ToUint8Array(encryptContent) // base64 到 Uint8Array
       // 只能在 node 使用
       // Buffer.from(encryptContent, 'base64')
     )

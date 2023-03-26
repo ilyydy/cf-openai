@@ -1,5 +1,3 @@
-import _ from 'lodash'
-
 import { genFail, genSuccess, genMyResponse } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG } from '../config'
