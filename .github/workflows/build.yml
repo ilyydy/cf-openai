@@ -32,4 +32,4 @@ jobs:
         with:
           artifacts: "dist/*.js"
           body: |
-            Please refer to [CHANGELOG.md](https://github.com/ilyydy/cf-openai/blob/${{ github.ref_name }}/main/CHANGELOG.md) for details.
+            Please refer to [CHANGELOG.md](https://github.com/ilyydy/cf-openai/blob/${{ github.ref_name }}/CHANGELOG.md) for details.
