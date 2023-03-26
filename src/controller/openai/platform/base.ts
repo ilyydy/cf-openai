@@ -1,6 +1,3 @@
-import _ from 'lodash'
-import { z } from 'zod'
-
 import {
   genFail,
   genSuccess,
@@ -27,14 +24,14 @@ const MODULE = 'src/openai/platform/base.ts'
 
 export const defaultCtx = {
   apiKey: '', // 用户的 OpenAI apiKey
-  role: CONST.ROLE.GUEST as Role,
+  role: new Set([CONST.ROLE.GUEST]) as Set<Role>,
   chatType: '单聊' as ChatType,
   conversationId: '',
   isRequestOpenAi: false, // 收到的消息是命令还是请求 OpenAI
 }
 
 export abstract class Base<T extends Platform> {
-  readonly ctx = _.cloneDeep(defaultCtx)
+  readonly ctx = { ...defaultCtx }
   readonly request: MyRequest
   readonly platform: T
   logger: Logger
@@ -116,7 +113,7 @@ export abstract class Base<T extends Platform> {
       const r = await openai.createChatCompletion([
         {
           role: 'system',
-          content: CONFIG.SYSTEM_INIT_MESSAGE(),
+          content: CONFIG.SYSTEM_INIT_MESSAGE,
         },
         {
           role: 'user',
@@ -230,7 +227,7 @@ export abstract class Base<T extends Platform> {
       msgContent,
     } = params
 
-    const initMsg = CONFIG.SYSTEM_INIT_MESSAGE()
+    const initMsg = CONFIG.SYSTEM_INIT_MESSAGE
     const initMsgTokenCount = estimateTokenCount(initMsg)
 
     const newHistory: kv.HistoryMsg[] = [
@@ -383,7 +380,9 @@ export abstract class Base<T extends Platform> {
         )
       } else {
         this.logger.info(
-          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${lastChatPromptRes.data?.msgId ?? ''}`
+          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${
+            lastChatPromptRes.data?.msgId ?? ''
+          }`
         )
       }
     }
@@ -392,50 +391,51 @@ export abstract class Base<T extends Platform> {
   }
 
   protected commands = {
+    // TODO admin
     [commandName.help]: {
       description: '获取命令帮助信息',
-      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
       fn: this.getHelpMsg.bind(this),
     },
     [commandName.bindKey]: {
-      description: `绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 ${commandName.testKey} 命令测试是否正常可用`,
-      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      description: `绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。刚绑定后的 1 分钟由于不同节点需要时间数据同步，可能出现提示未绑定，请稍等再试。可以先用 ${commandName.testKey} 命令测试是否正常可用`,
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
       fn: this.bindKey.bind(this),
     },
     [commandName.unbindKey]: {
       description: '解绑 OpenAI api key',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.unbindKey.bind(this),
     },
     [commandName.testKey]: {
       description:
         '调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.testKey.bind(this),
     },
     [commandName.setChatType]: {
       description: `切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量`,
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.setChatType.bind(this),
     },
     [commandName.newChat]: {
       description: '清除之前的串聊历史记录，开始新的串聊',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.createNewChat.bind(this),
     },
     [commandName.retry]: {
       description: '根据 msgId 获取对于回答，回答只会保留 1 分钟',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.retry.bind(this),
     },
     [commandName.usage]: {
       description: '获取本月用量信息，可能有 5 分钟左右的延迟',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.getUsage.bind(this),
     },
     [commandName.freeUsage]: {
       description: '获取免费用量信息，可能有 5 分钟左右的延迟',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.getFreeUsage.bind(this),
     },
     // TODO
@@ -456,7 +456,7 @@ export abstract class Base<T extends Platform> {
     },
     [commandName.faq]: {
       description: '一些常见问题',
-      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
       fn: getFaqMsg,
     },
   }
@@ -468,17 +468,16 @@ export abstract class Base<T extends Platform> {
     if (subcommand) {
       const obj = this.commands[subcommand]
       const roles = obj.roles as Role[]
-      if (!obj || !roles.includes(role)) {
+      if (!obj || roles.every((i) => !role.has(i))) {
         return genFail(`命令 ${subcommand} 不存在`)
       }
       cmdList.push({ name: subcommand, description: obj.description })
     } else {
       Object.entries(this.commands).forEach(([name, obj]) => {
         const roles = obj.roles as Role[]
-        if (!roles.includes(role)) {
-          return
+        if (roles.some((i) => role.has(i))) {
+          cmdList.push({ name, description: obj.description })
         }
-        cmdList.push({ name, description: obj.description })
       })
     }
 
@@ -492,16 +491,14 @@ export abstract class Base<T extends Platform> {
 
   protected async bindKey(key: string) {
     const { platform, userId, appid } = this.platform.ctx
-    const checkRes = z
-      .string()
-      .trim()
-      .max(CONFIG.OPEN_AI_API_KEY_MAX_LEN)
-      .min(CONFIG.OPEN_AI_API_KEY_MIN_LEN)
-      .safeParse(key)
-    if (!checkRes.success) {
-      return genFail(`OpenAI api key 格式不合法`)
+    if (
+      typeof key !== 'string' ||
+      key.trim().length > CONFIG.OPEN_AI_API_KEY_MAX_LEN ||
+      key.trim().length < CONFIG.OPEN_AI_API_KEY_MIN_LEN
+    ) {
+      return genFail(`绑定失败 key 格式不合法`)
     }
-    const r = await kv.setApiKey(platform, appid, userId, key)
+    const r = await kv.setApiKey(platform, appid, userId, key.trim())
     if (!r.success) {
       return genFail(`绑定失败 ${r.msg}`)
     }
@@ -601,19 +598,20 @@ export abstract class Base<T extends Platform> {
     const { apiKey, conversationId } = this.ctx
     const msgList = [
       '当前系统信息如下: ',
-      `OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
-      `OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
+      `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
+      `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
       `当前用户: ${userId}`,
     ]
 
     if (GLOBAL_CONFIG.DEBUG_MODE) {
       msgList.push(
-        `OpenAI 参数: ${JSON.stringify(CONFIG.OPEN_AI_API_EXTRA_PARAMS)}`
+        `⭐OpenAI 参数: ${JSON.stringify(CONFIG.OPEN_AI_API_EXTRA_PARAMS)}`
       )
-      msgList.push(`初始化文本: ${CONFIG.SYSTEM_INIT_MESSAGE()}`)
-      msgList.push(`当前 reqId: ${this.request.reqId}`)
-      if (conversationId) msgList.push(`当前 conversationId: ${conversationId}`)
+      msgList.push(`⭐初始化文本: ${CONFIG.SYSTEM_INIT_MESSAGE}`)
+      msgList.push(`⭐当前 reqId: ${this.request.reqId}`)
+      if (conversationId) msgList.push(`⭐当前 conversationId: ${conversationId}`)
       // TODO 更多信息
+      // TODO admin
     }
 
     const msg = msgList.join('\n')
@@ -623,8 +621,11 @@ export abstract class Base<T extends Platform> {
   protected async handleCommandMessage(message: string) {
     for (const [command, commandObj] of Object.entries(this.commands)) {
       const roles = commandObj.roles as Role[]
-      if (!roles.includes(this.ctx.role)) continue
-      if (message === command || message.startsWith(`${command} `)) {
+      if (roles.every((i) => !this.ctx.role.has(i))) continue
+      if (
+        message.toLowerCase() === command.toLowerCase() ||
+        message.toLowerCase().startsWith(`${command.toLowerCase()} `)
+      ) {
         const params = message.slice(command.length).trim()
         this.logger.info(`${MODULE} 执行命令 ${command} 参数 ${params}`)
 
@@ -650,7 +651,7 @@ export abstract class Base<T extends Platform> {
       id: this.platform.id,
       reqId: this.request.reqId,
       userId: this.platform.ctx.userId,
-      role: this.ctx.role,
+      role: Array.from(this.ctx.role).join(','),
       chatType: this.ctx.chatType,
     })
     this.platform.logger = logger
@@ -678,6 +679,7 @@ export const commandName = {
 
 export const faqList = [
   '只能发纯文本消息',
+  '输入命令可忽略大小写',
   'OpenAI 赠送的免费用量于 2023年6月1日(UTC时间) 过期',
   `一些平台会限制回复用户消息的最大等待时间，如微信限制 15 秒内必须回复否则提示公众号服务故障，而 OpenAI 可能需要更长时间处理，这种情况会先返回提示消息，在后台继续处理`,
   `串聊会带上历史消息，一方面会消耗更多用量，另一方面容易达到 OpenAI 消息总长上限，应常用使用命令 ${commandName.newChat} 清除历史`,

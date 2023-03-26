@@ -53,7 +53,7 @@ export interface OpenAiConfig {
   // 串聊最大历史记录长度
   MAX_HISTORY_LENGTH: number
   // 全局默认初始化消息
-  SYSTEM_INIT_MESSAGE: () => string
+  SYSTEM_INIT_MESSAGE: string
 }
 
 export interface Env

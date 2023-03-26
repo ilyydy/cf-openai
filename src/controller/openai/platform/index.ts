@@ -1,5 +1,6 @@
-import { PlatformType } from '../../../platform/types'
 import { WeChatHandler } from './wechat'
+
+import  type { PlatformType } from '../../../platform/types'
 
 export const handlerMap = {
   wechat: WeChatHandler,

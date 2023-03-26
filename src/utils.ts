@@ -1,5 +1,4 @@
-import { XMLBuilder, XMLParser, XMLValidator } from 'fast-xml-parser'
-import _ from 'lodash'
+import { XMLParser } from 'fast-xml-parser'
 
 import { CONFIG } from './global'
 
@@ -228,6 +227,14 @@ export function concatUint8Array(arrays: Uint8Array[]) {
   }
 
   return result
+}
+
+export function base64ToUint8Array(str: string) {
+  return Uint8Array.from(atob(str), (c) => c.charCodeAt(0))
+}
+
+export function uint8ArrayToBase64(uint8Array: Uint8Array) {
+  return btoa(String.fromCharCode.apply(null, uint8Array as unknown as number[]))
 }
 
 let textDecoder: TextDecoder

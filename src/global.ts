@@ -1,5 +1,3 @@
-import _ from 'lodash'
-
 import type { Env, GlobalConfig } from './types'
 
 const MODULE = 'src/global.ts'
@@ -25,9 +23,10 @@ export const CONST = {
   },
   TIME: {
     ONE_MIN: 60,
-    ONE_DAY: 3600,
-    ONE_MONTH: 3600 * 30,
-    ONE_YEAR: 3600 * 365,
+    ONE_HOUR: 3600,
+    ONE_DAY: 3600 * 24,
+    ONE_MONTH: 3600 * 24 * 30,
+    ONE_YEAR: 3600 * 24 * 30 * 365,
   },
 } as const
 

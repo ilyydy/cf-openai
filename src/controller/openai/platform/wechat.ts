@@ -1,5 +1,3 @@
-import _ from 'lodash'
-
 import { genFail, genSuccess, genMyResponse } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG } from '../config'
@@ -100,7 +98,7 @@ export class WeChatHandler extends Base<WeChat> {
     const { platform, appid, userId } = this.platform.ctx
 
     if (WE_CHAT_CONFIG.WECHAT_ADMIN_USER_ID_LIST.includes(userId)) {
-      this.ctx.role = CONST.ROLE.ADMIN
+      this.ctx.role.add(CONST.ROLE.ADMIN)
     }
 
     const apiKeyRes = await kv.getApiKey(platform, appid, userId)
@@ -122,9 +120,8 @@ export class WeChatHandler extends Base<WeChat> {
       await kv.setApiKey(platform, appid, userId, this.ctx.apiKey)
     }
 
-    if (this.ctx.role === CONST.ROLE.GUEST) {
-      this.ctx.role = CONST.ROLE.USER
-    }
+    this.ctx.role.delete(CONST.ROLE.GUEST)
+    this.ctx.role.add(CONST.ROLE.USER)
 
     const chatTypeRes = await kv.getChatType(platform, appid, userId)
     if (!chatTypeRes.success) {
