@@ -391,50 +391,51 @@ export abstract class Base<T extends Platform> {
   }
 
   protected commands = {
+    // TODO admin
     [commandName.help]: {
       description: '获取命令帮助信息',
-      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
       fn: this.getHelpMsg.bind(this),
     },
     [commandName.bindKey]: {
       description: `绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 ${commandName.testKey} 命令测试是否正常可用`,
-      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
       fn: this.bindKey.bind(this),
     },
     [commandName.unbindKey]: {
       description: '解绑 OpenAI api key',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.unbindKey.bind(this),
     },
     [commandName.testKey]: {
       description:
         '调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.testKey.bind(this),
     },
     [commandName.setChatType]: {
       description: `切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量`,
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.setChatType.bind(this),
     },
     [commandName.newChat]: {
       description: '清除之前的串聊历史记录，开始新的串聊',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.createNewChat.bind(this),
     },
     [commandName.retry]: {
       description: '根据 msgId 获取对于回答，回答只会保留 1 分钟',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.retry.bind(this),
     },
     [commandName.usage]: {
       description: '获取本月用量信息，可能有 5 分钟左右的延迟',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.getUsage.bind(this),
     },
     [commandName.freeUsage]: {
       description: '获取免费用量信息，可能有 5 分钟左右的延迟',
-      roles: [CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.USER],
       fn: this.getFreeUsage.bind(this),
     },
     // TODO
@@ -455,7 +456,7 @@ export abstract class Base<T extends Platform> {
     },
     [commandName.faq]: {
       description: '一些常见问题',
-      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER, CONST.ROLE.ADMIN],
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
       fn: getFaqMsg,
     },
   }
@@ -610,6 +611,7 @@ export abstract class Base<T extends Platform> {
       msgList.push(`当前 reqId: ${this.request.reqId}`)
       if (conversationId) msgList.push(`当前 conversationId: ${conversationId}`)
       // TODO 更多信息
+      // TODO admin
     }
 
     const msg = msgList.join('\n')
