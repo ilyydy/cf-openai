@@ -28,7 +28,7 @@
   "scripts": {
     "local": "wrangler dev --local -c wrangler.dev.toml",
     "start": "proxychains wrangler dev -c wrangler.dev.toml",
-    "build-mini": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js --minify",
+    "build-mini": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.mini.js --minify",
     "build": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js --minify --sourcemap=inline",
     "deploy": "wrangler publish -c wrangler.prod.toml",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
