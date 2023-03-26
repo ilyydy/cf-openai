@@ -30,7 +30,7 @@
 
 ### Cloudflare 界面部署
 
-1. Cloudflare Workers 界面创建新服务，都默认就行。进入新建的 Worker ，右上角 `快速编辑`，在 [本项目 release](https://github.com/ilyydy/cf-openai/releases) 下载打包好的 js 文件,复制内容到编辑器中，保存
+1. Cloudflare Workers 界面创建新服务，都默认就行。进入新建的 Worker ，右上角 `快速编辑`，在 [本项目 release](https://github.com/ilyydy/cf-openai/releases) 下载打包好的 js 文件，复制内容到编辑器中，保存
 2. Workers 子菜单 KV 创建一个新的命名空间，名字随便取。回到第一步的 Worker 中，点选页面中间一排选项的最后一个 `设置`，选左侧 `变量`，页面下拉至 `KV 命名空间绑定`，`编辑变量` 点击后的表单中添加绑定第二部创建的命名空间，左侧变量名称必须填 `KV`
 3. 上拉至顶部的 `环境变量`，根据要接入的服务阅读后面章节在界面进行配置
 4. 可选，国内服务接入需要。域名 DNS 解析必须在 Cloudflare，操作文档见 [Add site to Cloudflare](https://developers.cloudflare.com/fundamentals/get-started/setup/add-site/)。也可以直接在 Cloudflare 买域名，无需再自己操作 DNS 解析。然后在 Worker 页面中间一排选项的第二个 `触发器` 中添加自定义域，将域名添加到 Worker
@@ -58,7 +58,7 @@
 ## 微信公众号接入配置
 
 1. 注册微信公众号，一般是个人订阅号，资质验证门槛低
-2. 公众号管理平台-设置与开发-基本配置页面确认自己的开发者 ID(AppID)，生成令牌(Token)、消息加解密密钥(EncodingAESKey)（若开启安全模式或兼容模式才需要），此时还不需要启用服务器配置
+2. 公众号管理平台-设置与开发-基本配置页面确认自己的开发者 ID(AppID)，生成令牌(Token)，消息加解密密钥(EncodingAESKey)（若开启安全模式或兼容模式才需要），此时还不需要启用服务器配置
 3. Worker 配置微信公众号需要的环境变量。可以通过界面操作配置，见上面的 [Cloudflare 界面部署](#cloudflare-界面部署) 第三步。可以通过配置文件配置，见 [Github Action 部署](#github-action-部署) 第三步和 [本地命令行部署](#本地命令行部署) 第三步
 
    | 变量名                    | 内容描述                                   | 备注                                               |
@@ -69,7 +69,7 @@
    | WECHAT_${ID}_AES_KEY      | 公众号的消息加解密密钥(EncodingAESKey)     | 将 ${ID} 替换成你自定义的 ID，开启安全模式或兼容模式时才需要 |
    | WECHAT_ADMIN_USER_ID_LIST | admin 用户名单，多个则以英文逗号分隔           | 可以暂时先不配，等后面知道自己的用户 ID 后再配置   |
 
-4. 根据域名和自定义的 ID 得出第二步中服务器配置的服务器地址(URL)并进行配置，格式为 `https://${域名}/openai/wechat/${ID}`。如域名为 `xxx.com`，自定义的 ID 为 `id123`，则服务器地址(URL)为 `https://xxx.com/openai/wechat/id123`。
+4. 根据域名和自定义的 ID 得出第二步中服务器配置的服务器地址(URL)并进行配置，格式为 `https://${域名}/openai/wechat/${ID}`。如域名为 `xxx.com`，自定义的 ID 为 `id123`，则服务器地址(URL)为 `https://xxx.com/openai/wechat/id123`
 5. 消息加解密方式一般选明文，启用服务器配置，验证接入成功后即可使用
 
 ## 可用命令
@@ -78,17 +78,17 @@
 
 | 命令         | 可用角色    | 说明                                                                                                                    |
 | ------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------- |
-| /help        | 游客,用户   | 获取命令帮助信息                                                                                                        |
-| /bindKey     | 游客,用户   | 绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 /testKey 命令测试是否正常可用              |
+| /help        | 游客，用户   | 获取命令帮助信息                                                                                                        |
+| /bindKey     | 游客，用户   | 绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 /testKey 命令测试是否正常可用              |
 | /unbindKey   | 用户        | 解绑 OpenAI api key                                                                                                     |
 | /testKey     | 用户        | 调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量                                                     |
-| /setChatType | 用户理员    | 切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量 |
+| /setChatType | 用户    | 切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量 |
 | /newChat     | 用户        | 清除之前的串聊历史记录，开始新的串聊                                                                                    |
 | /retry       | 用户        | 根据 msgId 获取对于回答，回答只会保留 1 分钟                                                                            |
 | /usage       | 用户        | 获取本月用量信息，可能有 5 分钟左右的延迟                                                                               |
 | /freeUsage   | 用户        | 获取免费用量信息，可能有 5 分钟左右的延迟                                                                               |
-| /system      | 用户,管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                            |
-| /faq         | 游客,用户   | 一些常见问题                                                                                                            |
+| /system      | 用户，管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                            |
+| /faq         | 游客，用户   | 一些常见问题                                                                                                            |
 
 ## OpenAI 配置
 
