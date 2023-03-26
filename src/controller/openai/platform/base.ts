@@ -24,7 +24,7 @@ const MODULE = 'src/openai/platform/base.ts'
 
 export const defaultCtx = {
   apiKey: '', // 用户的 OpenAI apiKey
-  role: new Set(CONST.ROLE.GUEST) as Set<Role>,
+  role: new Set([CONST.ROLE.GUEST]) as Set<Role>,
   chatType: '单聊' as ChatType,
   conversationId: '',
   isRequestOpenAi: false, // 收到的消息是命令还是请求 OpenAI
@@ -398,7 +398,7 @@ export abstract class Base<T extends Platform> {
       fn: this.getHelpMsg.bind(this),
     },
     [commandName.bindKey]: {
-      description: `绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 ${commandName.testKey} 命令测试是否正常可用`,
+      description: `绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。刚绑定后的 1 分钟由于不同节点需要时间数据同步，可能出现提示未绑定，请稍等再试。可以先用 ${commandName.testKey} 命令测试是否正常可用`,
       roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
       fn: this.bindKey.bind(this),
     },
@@ -468,14 +468,14 @@ export abstract class Base<T extends Platform> {
     if (subcommand) {
       const obj = this.commands[subcommand]
       const roles = obj.roles as Role[]
-      if (!obj || roles.every(i => !role.has(i))) {
+      if (!obj || roles.every((i) => !role.has(i))) {
         return genFail(`命令 ${subcommand} 不存在`)
       }
       cmdList.push({ name: subcommand, description: obj.description })
     } else {
       Object.entries(this.commands).forEach(([name, obj]) => {
         const roles = obj.roles as Role[]
-        if (roles.some(i => role.has(i))) {
+        if (roles.some((i) => role.has(i))) {
           cmdList.push({ name, description: obj.description })
         }
       })
@@ -598,18 +598,18 @@ export abstract class Base<T extends Platform> {
     const { apiKey, conversationId } = this.ctx
     const msgList = [
       '当前系统信息如下: ',
-      `OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
-      `OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
+      `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
+      `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
       `当前用户: ${userId}`,
     ]
 
     if (GLOBAL_CONFIG.DEBUG_MODE) {
       msgList.push(
-        `OpenAI 参数: ${JSON.stringify(CONFIG.OPEN_AI_API_EXTRA_PARAMS)}`
+        `⭐OpenAI 参数: ${JSON.stringify(CONFIG.OPEN_AI_API_EXTRA_PARAMS)}`
       )
-      msgList.push(`初始化文本: ${CONFIG.SYSTEM_INIT_MESSAGE}`)
-      msgList.push(`当前 reqId: ${this.request.reqId}`)
-      if (conversationId) msgList.push(`当前 conversationId: ${conversationId}`)
+      msgList.push(`⭐初始化文本: ${CONFIG.SYSTEM_INIT_MESSAGE}`)
+      msgList.push(`⭐当前 reqId: ${this.request.reqId}`)
+      if (conversationId) msgList.push(`⭐当前 conversationId: ${conversationId}`)
       // TODO 更多信息
       // TODO admin
     }
@@ -621,8 +621,11 @@ export abstract class Base<T extends Platform> {
   protected async handleCommandMessage(message: string) {
     for (const [command, commandObj] of Object.entries(this.commands)) {
       const roles = commandObj.roles as Role[]
-      if (roles.every(i => !this.ctx.role.has(i))) continue
-      if (message === command || message.startsWith(`${command} `)) {
+      if (roles.every((i) => !this.ctx.role.has(i))) continue
+      if (
+        message.toLowerCase() === command.toLowerCase() ||
+        message.toLowerCase().startsWith(`${command.toLowerCase()} `)
+      ) {
         const params = message.slice(command.length).trim()
         this.logger.info(`${MODULE} 执行命令 ${command} 参数 ${params}`)
 
@@ -676,6 +679,7 @@ export const commandName = {
 
 export const faqList = [
   '只能发纯文本消息',
+  '输入命令可忽略大小写',
   'OpenAI 赠送的免费用量于 2023年6月1日(UTC时间) 过期',
   `一些平台会限制回复用户消息的最大等待时间，如微信限制 15 秒内必须回复否则提示公众号服务故障，而 OpenAI 可能需要更长时间处理，这种情况会先返回提示消息，在后台继续处理`,
   `串聊会带上历史消息，一方面会消耗更多用量，另一方面容易达到 OpenAI 消息总长上限，应常用使用命令 ${commandName.newChat} 清除历史`,
