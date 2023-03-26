@@ -42,7 +42,7 @@ export async function getApiKey(
   return getWithMetadata<string, Metadata>(
     getApiKeyKey(platform, appid, userId),
     {
-      cacheTtl: 3600,
+      // cacheTtl: 3600,
     }
   )
 }
