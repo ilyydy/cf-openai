@@ -13,7 +13,11 @@ export interface GlobalConfig {
 
 export interface WeChatConfig {
   // admin 用户名单
-  WECHAT_ADMIN_USER_ID_LIST: string[]
+  WECHAT_ADMIN_USER_ID_LIST: string[],
+  // 游客的默认 openai key
+  WECHAT_GUEST_OPENAI_KEY: string,
+  // admin 用户的默认 openai key
+  WECHAT_ADMIN_OPENAI_KEY: string,
   // 处理微信请求的最大毫秒数
   WECHAT_HANDLE_MS_TIME: number
   // 允许访问的 id 列表

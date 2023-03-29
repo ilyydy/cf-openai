@@ -33,6 +33,8 @@ const MODULE = 'src/platform/wechat.ts'
 export const CONFIG: WeChatConfig = {
   // admin 用户名单，设置时以逗号分隔
   WECHAT_ADMIN_USER_ID_LIST: [],
+  WECHAT_ADMIN_OPENAI_KEY: '',
+  WECHAT_GUEST_OPENAI_KEY: '',
   // 处理微信请求的最大毫秒数
   WECHAT_HANDLE_MS_TIME: 13000,
   // 允许访问的 id 列表

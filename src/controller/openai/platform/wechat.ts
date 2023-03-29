@@ -96,8 +96,10 @@ export class WeChatHandler extends Base<WeChat> {
 
   async initCtx() {
     const { platform, appid, userId } = this.platform.ctx
-
-    if (WE_CHAT_CONFIG.WECHAT_ADMIN_USER_ID_LIST.includes(userId)) {
+    const isAdmin = WE_CHAT_CONFIG.WECHAT_ADMIN_USER_ID_LIST.includes(userId);
+    const guestOpenAiKey = WE_CHAT_CONFIG.WECHAT_GUEST_OPENAI_KEY;
+    const adminOpenAiKey = WE_CHAT_CONFIG.WECHAT_ADMIN_OPENAI_KEY || guestOpenAiKey;
+    if (isAdmin) {
       this.ctx.role.add(CONST.ROLE.ADMIN)
     }
 
@@ -107,19 +109,25 @@ export class WeChatHandler extends Base<WeChat> {
       return '服务异常'
     }
 
-    if (!apiKeyRes.data.value) {
+    if (apiKeyRes.data.value) {
+      this.ctx.apiKey = apiKeyRes.data.value
+      // 距离还有 1 天过期时重新 set
+      if (
+        apiKeyRes.data.metadata.expireTime - Date.now() <=
+        CONST.TIME.ONE_DAY * 1000
+      ) {
+        await kv.setApiKey(platform, appid, userId, this.ctx.apiKey)
+      }
+    } else if (isAdmin && adminOpenAiKey) {
+      this.ctx.apiKey = adminOpenAiKey;
+      await kv.setApiKey(platform, appid, userId, adminOpenAiKey);
+    } else if (guestOpenAiKey) {
+      this.ctx.apiKey = guestOpenAiKey;
+      await kv.setApiKey(platform, appid, userId, guestOpenAiKey);
+    } else {
       this.logger.debug(`${MODULE} 没有 api key`)
       return
     }
-    this.ctx.apiKey = apiKeyRes.data.value
-    // 距离还有 1 天过期时重新 set
-    if (
-      apiKeyRes.data.metadata.expireTime - Date.now() <=
-      CONST.TIME.ONE_DAY * 1000
-    ) {
-      await kv.setApiKey(platform, appid, userId, this.ctx.apiKey)
-    }
-
     this.ctx.role.delete(CONST.ROLE.GUEST)
     this.ctx.role.add(CONST.ROLE.USER)
 
