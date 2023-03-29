@@ -97,8 +97,8 @@ export class WeChatHandler extends Base<WeChat> {
   async initCtx() {
     const { platform, appid, userId } = this.platform.ctx
     const isAdmin = WE_CHAT_CONFIG.WECHAT_ADMIN_USER_ID_LIST.includes(userId);
+    const adminOpenAiKey = WE_CHAT_CONFIG.WECHAT_ADMIN_OPENAI_KEY;
     const guestOpenAiKey = WE_CHAT_CONFIG.WECHAT_GUEST_OPENAI_KEY;
-    const adminOpenAiKey = WE_CHAT_CONFIG.WECHAT_ADMIN_OPENAI_KEY || guestOpenAiKey;
     if (isAdmin) {
       this.ctx.role.add(CONST.ROLE.ADMIN)
     }
@@ -120,10 +120,8 @@ export class WeChatHandler extends Base<WeChat> {
       }
     } else if (isAdmin && adminOpenAiKey) {
       this.ctx.apiKey = adminOpenAiKey;
-      await kv.setApiKey(platform, appid, userId, adminOpenAiKey);
     } else if (guestOpenAiKey) {
       this.ctx.apiKey = guestOpenAiKey;
-      await kv.setApiKey(platform, appid, userId, guestOpenAiKey);
     } else {
       this.logger.debug(`${MODULE} 没有 api key`)
       return
