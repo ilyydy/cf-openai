@@ -69,7 +69,9 @@
    | WECHAT_${ID}_APPID        | 公众号的开发者 ID(AppID)                   | 将 ${ID} 替换成你自定义的 ID                       |
    | WECHAT_${ID}_TOKEN        | 公众号的令牌(Token)                        | 将 ${ID} 替换成你自定义的 ID                       |
    | WECHAT_${ID}_AES_KEY      | 公众号的消息加解密密钥(EncodingAESKey)     | 将 ${ID} 替换成你自定义的 ID，开启安全模式或兼容模式时才需要 |
-   | WECHAT_ADMIN_USER_ID_LIST | admin 用户名单，多个则以英文逗号分隔           | 可以暂时先不配，等后面知道自己的用户 ID 后再配置   |
+   | WECHAT_ADMIN_USER_ID_LIST | admin 用户名单，多个则以英文逗号分隔       | 可以暂时先不配，等后面知道自己的用户 ID 后再配置   |
+   | WECHAT_ADMIN_OPENAI_KEY   | admin 用户的 OpenAI Key                    | 可选，默认会使用 `WECHAT_GUEST_OPENAI_KEY` |
+   | WECHAT_GUEST_OPENAI_KEY   | 游客的 OpenAI Key                          | 可选，如果不配的话，需要用户通过 /bindKey 命令来手动绑定 Key |
 
 4. 根据域名和自定义的 ID 得出第二步中服务器配置的服务器地址(URL)并进行配置，格式为 `https://${域名}/openai/wechat/${ID}`。如域名为 `xxx.com`，自定义的 ID 为 `id123`，则服务器地址(URL)为 `https://xxx.com/openai/wechat/id123`
 5. 消息加解密方式一般选明文，启用服务器配置，验证接入成功后即可使用
