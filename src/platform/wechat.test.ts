@@ -68,8 +68,8 @@ describe('src/platform/wechat.ts', () => {
     expect(res.body).toBe(echostr)
   })
 
-  it('decrypt wechat encrypt content', async () => {
-    const decryptRes = await webchatInstance.decryptContent(encryptContent)
+  it('decrypt wechat encrypt content', () => {
+    const decryptRes = webchatInstance.decryptContent(encryptContent)
     if (!decryptRes.success) {
       throw new Error(`decrypt fail ${decryptRes.msg}`)
     }
@@ -79,13 +79,13 @@ describe('src/platform/wechat.ts', () => {
     expect(appid).toBe(expectAppid)
   })
 
-  it('encrypt wechat plain content', async () => {
-    const encryptRes = await webchatInstance.encryptContent(expectPlainMsg)
+  it('encrypt wechat plain content', () => {
+    const encryptRes = webchatInstance.encryptContent(expectPlainMsg)
     if (!encryptRes.success) {
       throw new Error(`encrypt fail ${encryptRes.msg}`)
     }
 
-    const decryptRes = await webchatInstance.decryptContent(encryptRes.data)
+    const decryptRes = webchatInstance.decryptContent(encryptRes.data)
     if (!decryptRes.success) {
       throw new Error(`decrypt fail ${decryptRes.msg}`)
     }

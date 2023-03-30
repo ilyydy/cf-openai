@@ -1,3 +1,12 @@
+## [0.0.2](https://github.com/ilyydy/cf-openai/compare/v0.0.1...v0.0.2) (2023-03-29)
+
+
+### Bug Fixes
+
+* 微信aes加解密可能失败问题 ([0ffd9dd](https://github.com/ilyydy/cf-openai/commit/0ffd9ddb61bef16babb2b3a0879c3cb266bdeea8))
+
+
+
 ## 0.0.1 (2023-03-26)
 
 
