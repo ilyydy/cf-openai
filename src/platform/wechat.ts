@@ -16,6 +16,7 @@ import {
   uint8ArrayToBase64,
 } from '../utils'
 import { errCodeMap } from '../errCode'
+import { AES } from './aes'
 
 import type { Result, Logger } from '../utils'
 import type { MyRequest, MyResponse, WeChatConfig } from '../types'
@@ -143,8 +144,7 @@ export class WeChat implements Platform<WeChatMsg> {
       }
       const { recvPlainMsg, isEncrypt } = parseRes.data
       this.ctx.recvMsg = recvPlainMsg
-      // TODO 微信加密回复有问题，直接明文回复
-      // this.ctx.isEncrypt = isEncrypt
+      this.ctx.isEncrypt = isEncrypt
       this.ctx.userId = recvPlainMsg.FromUserName
       this.ctx.developerId = recvPlainMsg.ToUserName
 
@@ -250,25 +250,28 @@ export class WeChat implements Platform<WeChatMsg> {
    * @see https://github.com/keel/aes-cross/tree/master/info-cn
    * @param encryptContent 从 xml <Encrypt> 块中取出的内容，加密处理后的Base64编码
    */
-  async decryptContent(encryptContent: string) {
-    const keyRes = await this.getAesKeyInfo()
-    if (!keyRes.success) {
-      return keyRes
-    }
-    const { iv, key } = keyRes.data
+  decryptContent(encryptContent: string) {
+    // const keyRes = await this.getAesKeyInfo()
+    // if (!keyRes.success) {
+    //   return keyRes
+    // }
+    // const { iv, key } = keyRes.data
 
     try {
-      const arrBuffer = await crypto.subtle.decrypt(
-        { name: 'AES-CBC', iv },
-        key,
-        base64ToUint8Array(encryptContent) // base64 到 Uint8Array
-        // 只能在 node 使用
-        // Buffer.from(encryptContent, 'base64')
-      )
+      // const arrBuffer = await crypto.subtle.decrypt(
+      //   { name: 'AES-CBC', iv },
+      //   key,
+      //   base64ToUint8Array(encryptContent) // base64 到 Uint8Array
+      //   // 只能在 node 使用
+      //   // Buffer.from(encryptContent, 'base64')
+      // )
 
       // 数据采用PKCS#7填充至32字节的倍数
       // = 16个字节的随机字符串 + 4个字节的msg长度(网络字节序) + 明文msg + receiveid + 填充
-      const uint8Array = new Uint8Array(arrBuffer)
+      // const uint8Array = new Uint8Array(arrBuffer)
+
+      const aes = new AES(base64ToUint8Array(`${this.ctx.encodingAESKey}=`))
+      const uint8Array = aes.decrypt(base64ToUint8Array(encryptContent))
 
       // 加密后数据块中填充的字节数
       let pad = uint8Array[uint8Array.length - 1]
@@ -302,7 +305,7 @@ export class WeChat implements Platform<WeChatMsg> {
    * @see https://github.com/keel/aes-cross/tree/master/info-cn
    * @param plainContent utf8 明文
    */
-  async encryptContent(plainContent: string) {
+  encryptContent(plainContent: string) {
     // 加密后的结果 = 16个字节的随机字符串 + 4个字节的msg长度(网络字节序) + 明文msg + receiveid + 填充
     try {
       // 16B 随机字符串
@@ -323,19 +326,22 @@ export class WeChat implements Platform<WeChatMsg> {
         appidUint8Array,
       ])
 
-      const keyRes = await this.getAesKeyInfo()
-      if (!keyRes.success) {
-        return keyRes
-      }
-      const { iv, key } = keyRes.data
+      // const keyRes = await this.getAesKeyInfo()
+      // if (!keyRes.success) {
+      //   return keyRes
+      // }
+      // const { iv, key } = keyRes.data
 
-      const arrBuffer = await crypto.subtle.encrypt(
-        { name: 'AES-CBC', iv },
-        key,
-        concatenatedArray
-      )
+      // const arrBuffer = await crypto.subtle.encrypt(
+      //   { name: 'AES-CBC', iv },
+      //   key,
+      //   concatenatedArray
+      // )
 
-      return genSuccess(uint8ArrayToBase64(new Uint8Array(arrBuffer)))
+      const aes = new AES(base64ToUint8Array(`${this.ctx.encodingAESKey}=`))
+      const uint8Array = aes.encrypt(concatenatedArray)
+
+      return genSuccess(uint8ArrayToBase64(uint8Array))
     } catch (error) {
       this.logger.error(
         `${MODULE} 微信消息加密异常 ${errorToString(error as Error)}`
@@ -379,7 +385,7 @@ export class WeChat implements Platform<WeChatMsg> {
         return genFail('微信消息签名不对')
       }
 
-      const decryptRes = await this.decryptContent(xmlObj.Encrypt)
+      const decryptRes = this.decryptContent(xmlObj.Encrypt)
       if (!decryptRes.success) {
         return genFail('解密微信消息失败')
       }
@@ -442,7 +448,7 @@ export class WeChat implements Platform<WeChatMsg> {
       nonce: Math.floor(Math.random() * 10 ** 10),
     }
   ) {
-    const encryptRes = await this.encryptContent(xmlMsg)
+    const encryptRes = this.encryptContent(xmlMsg)
     if (!encryptRes.success) {
       return encryptRes
     }

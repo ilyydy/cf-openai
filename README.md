@@ -37,6 +37,8 @@
 
 ### Github Action 部署
 
+注意：`wrangler` 执行部署时会打印相关信息，如果 `wrangler.toml` 配置的环境变量和 KV ID 等。这些可以从 Github Actions 执行日志中看到
+
 1. 按照文档 [创建 Cloudflare API token](<https://developers.cloudflare.com/workers/wrangler/ci-cd/#create-a-cloudflare-api-token>)
 2. KV 创建同上，文件 `wrangler.toml` 中 `kv_namespaces` `id` 填入创建的命名空间的 id 进行绑定
 3. Github 上 fork 本项目，在你自己的项目仓库中 `Settings`-`Secrets and variables`-`Actions` 添加以下 Secrets
@@ -107,5 +109,3 @@
 | SYSTEM_INIT_MESSAGE         | You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023 | 发给 OpenAI 的默认第一条系统消息，可用于调整模型 |
 
 ## 已知问题
-
-1. 微信公众号的消息加解密方式选择安全模式或兼容模式时，按照官方文档应返回加密格式的消息，但实测发现只能返回明文格式的消息，未确认是个别账号问题，还是普遍问题。[代码都用明文格式返回](https://github.com/ilyydy/cf-openai/blob/v0.0.1/src/platform/wechat.ts#L144)
