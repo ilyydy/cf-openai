@@ -1,11 +1,10 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest'
 
-import * as wechat from './wechat'
-
-import type { Env } from "../types"
+import { CommonUtil } from './commonUtil'
+import { logger } from '../../utils'
 
 describe('src/platform/wechat.ts', () => {
-  let webchatInstance: wechat.WeChat
+  let commonUtil: CommonUtil
 
   const id = '1'
   const token = 'spamtest'
@@ -16,6 +15,8 @@ describe('src/platform/wechat.ts', () => {
   const msgSignature = '5d197aaffba7e9b25a30732f161a50dee96bd5fa'
   const signature = '16120ec1b8dbb870f510d87ce6bc2463eae6ca1a'
   const url = `https://example.com/openai/wechat/${id}?echostr=${echostr}&signature=${signature}&timestamp=${timestamp}&nonce=${nonce}&msg_signature=${msgSignature}`
+  const urlObj = new URL(url)
+  const { searchParams } = urlObj
   const encodingAESKey = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG'
 
   const encryptContent =
@@ -41,87 +42,87 @@ describe('src/platform/wechat.ts', () => {
   } as const
 
   beforeAll(() => {
-    webchatInstance = new wechat.WeChat(
-      {
-        body: '',
-        ctx: {} as ExecutionContext,
-        headers: {},
-        method: '',
-        reqId: '',
-        url,
-        urlObj: new URL(url),
-        env: {} as Env,
-      },
-      id
-    )
-
-    webchatInstance.ctx.token = token
-    webchatInstance.ctx.encodingAESKey = encodingAESKey
-    webchatInstance.ctx.appid = expectAppid
-    webchatInstance.ctx.recvMsg = recvPlainMsg
+    commonUtil = new CommonUtil(logger)
+    commonUtil.setKey(encodingAESKey)
   })
 
   // afterAll(async () => {})
 
-  it('http get', async () => {
-    const res = await webchatInstance.handleGet()
-    expect(res.body).toBe(echostr)
-  })
-
-  it('decrypt wechat encrypt content', async () => {
-    const decryptRes = await webchatInstance.decryptContent(encryptContent)
+  it('decrypt wechat encrypt content', () => {
+    const decryptRes = commonUtil.decryptContent(encryptContent)
     if (!decryptRes.success) {
       throw new Error(`decrypt fail ${decryptRes.msg}`)
     }
 
-    const { plainXmlMsg, appid } = decryptRes.data
+    const { plainContent: plainXmlMsg, appid } = decryptRes.data
     expect(plainXmlMsg).toBe(expectPlainMsg)
     expect(appid).toBe(expectAppid)
   })
 
-  it('encrypt wechat plain content', async () => {
-    const encryptRes = await webchatInstance.encryptContent(expectPlainMsg)
+  it('encrypt wechat plain content', () => {
+    const encryptRes = commonUtil.encryptContent(expectPlainMsg, expectAppid)
     if (!encryptRes.success) {
       throw new Error(`encrypt fail ${encryptRes.msg}`)
     }
 
-    const decryptRes = await webchatInstance.decryptContent(encryptRes.data)
+    const decryptRes = commonUtil.decryptContent(encryptRes.data)
     if (!decryptRes.success) {
       throw new Error(`decrypt fail ${decryptRes.msg}`)
     }
 
-    const { plainXmlMsg, appid } = decryptRes.data
-    expect(plainXmlMsg).toBe(expectPlainMsg)
+    const { plainContent, appid } = decryptRes.data
+    expect(plainContent).toBe(expectPlainMsg)
     expect(appid).toBe(expectAppid)
   })
 
   it('parse wechat plain xml text msg', async () => {
-    const msgRes = await webchatInstance.parseRecvXmlMsg(expectPlainMsg)
+    const msgRes = await commonUtil.parseRecvXmlMsg(
+      expectPlainMsg,
+      searchParams,
+      expectAppid,
+      token
+    )
     if (!msgRes.success) {
       throw new Error(`parse wechat plain xml text msg fail ${msgRes.msg}`)
     }
 
     expect(msgRes.data.isEncrypt).toBe(false)
-    expect(msgRes.data.recvPlainMsg).toStrictEqual(recvPlainMsg)
+    expect(msgRes.data.recvPlainData).toStrictEqual(recvPlainMsg)
   })
 
   it('parse wechat encrypt xml text msg', async () => {
-    const msgRes = await webchatInstance.parseRecvXmlMsg(encryptMsg)
+    const msgRes = await commonUtil.parseRecvXmlMsg(
+      encryptMsg,
+      searchParams,
+      expectAppid,
+      token
+    )
     if (!msgRes.success) {
       throw new Error(`parse wechat encrypt xml text msg fail ${msgRes.msg}`)
     }
 
     expect(msgRes.data.isEncrypt).toBe(true)
-    expect(msgRes.data.recvPlainMsg).toStrictEqual(recvPlainMsg)
+    expect(msgRes.data.recvPlainData).toStrictEqual(recvPlainMsg)
   })
 
   it('generate wechat encrypt xml text msg', async () => {
-    const textXmlMsg = webchatInstance.genSendTextXmlMsg(recvPlainMsg.Content)
+    const textXmlMsg = `<xml>
+<ToUserName><![CDATA[${recvPlainMsg.FromUserName}]]></ToUserName>
+<FromUserName><![CDATA[${recvPlainMsg.ToUserName}]]></FromUserName>
+<CreateTime>${Math.floor(Date.now() / 1000)}</CreateTime>
+<MsgType><![CDATA[text]]></MsgType>
+<Content><![CDATA[${recvPlainMsg.Content}]]></Content>
+</xml>`
 
-    const msgRes = await webchatInstance.genSendEncryptXmlMsg(textXmlMsg)
+    const msgRes = await commonUtil.genSendEncryptXmlMsg(
+      textXmlMsg,
+      expectAppid,
+      token
+    )
     if (!msgRes.success) {
       throw new Error(`generate wechat encrypt xml text msg fail ${msgRes.msg}`)
     }
     // console.log(msgRes.data)
+    expect(msgRes.success).toBe(true)
   })
 })

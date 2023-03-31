@@ -3,18 +3,18 @@ import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG } from '../config'
 import * as kv from '../kv'
 import { estimateTokenCount } from '../utils'
-import { CONFIG as WE_CHAT_CONFIG } from '../../../platform/wechat/wechat'
+import { CONFIG as WE_WORK_CONFIG } from '../../../platform/wechat/wework'
 import { WeChatBaseHandler } from './wechatBase'
 
-import type { WeChat } from '../../../platform/wechat/wechat'
+import type { WeWork } from '../../../platform/wechat/wework'
 
-const MODULE = 'src/openai/platform/wechat.ts'
+const MODULE = 'src/openai/platform/wework.ts'
 
-export class WeChatHandler extends WeChatBaseHandler<WeChat> {
+export class WeWorkHandler extends WeChatBaseHandler<WeWork> {
   async initCtx() {
     const { platform, appid, userId } = this.platform.ctx
 
-    if (WE_CHAT_CONFIG.WECHAT_ADMIN_USER_ID_LIST.includes(userId)) {
+    if (WE_WORK_CONFIG.WEWORK_ID_LIST.includes(userId)) {
       this.ctx.role.add(CONST.ROLE.ADMIN)
     }
 

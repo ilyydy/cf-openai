@@ -7,7 +7,7 @@ import {
   mergeFromEnv,
 } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
-import { CONFIG } from '../config'
+import { CONFIG, commandName } from '../config'
 import { OpenAiClient } from '../openAiClient'
 import * as kv from '../kv'
 import { estimateTokenCount, getApiKeyWithMask } from '../utils'
@@ -30,7 +30,7 @@ export const defaultCtx = {
   isRequestOpenAi: false, // 收到的消息是命令还是请求 OpenAI
 }
 
-export abstract class Base<T extends Platform> {
+export abstract class Base<T extends Platform<PlatformType>> {
   readonly ctx = { ...defaultCtx }
   readonly request: MyRequest
   readonly platform: T
@@ -595,11 +595,12 @@ export abstract class Base<T extends Platform> {
 
   protected commandSystem(params: any) {
     const { platform, userId, appid } = this.platform.ctx
-    const { apiKey, conversationId } = this.ctx
+    const { apiKey, conversationId, chatType } = this.ctx
     const msgList = [
       '当前系统信息如下: ',
       `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
       `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
+      `⭐OpenAI 对话模式: ${chatType}`,
       `当前用户: ${userId}`,
     ]
 
@@ -658,23 +659,6 @@ export abstract class Base<T extends Platform> {
     this.logger = logger
     return logger
   }
-}
-
-export const commandName = {
-  help: '/help',
-  bindKey: '/bindKey',
-  unbindKey: '/unbindKey',
-  testKey: '/testKey',
-  setChatType: '/setChatType',
-  newChat: '/newChat',
-  retry: '/retry',
-  usage: '/usage',
-  freeUsage: '/freeUsage',
-  version: '/version',
-  setEnv: '/setEnv',
-  system: '/system',
-  faq: '/faq',
-  // TODO 发消息给开发者
 }
 
 export const faqList = [

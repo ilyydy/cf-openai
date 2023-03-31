@@ -1,5 +1,22 @@
 import type { OpenAiConfig } from '../../types'
 
+export const commandName = {
+  help: '/help',
+  bindKey: '/bindKey',
+  unbindKey: '/unbindKey',
+  testKey: '/testKey',
+  setChatType: '/setChatType',
+  newChat: '/newChat',
+  retry: '/retry',
+  usage: '/usage',
+  freeUsage: '/freeUsage',
+  version: '/version',
+  setEnv: '/setEnv',
+  system: '/system',
+  faq: '/faq',
+  // TODO 发消息给开发者
+}
+
 export const CONFIG: OpenAiConfig = {
   // OpenAI 的模型名称
   CHAT_MODEL: 'gpt-3.5-turbo',
@@ -24,4 +41,6 @@ export const CONFIG: OpenAiConfig = {
   MAX_HISTORY_LENGTH: 20,
   // 全局默认初始化消息，不能使用 Date.now() 获取当前时间，实际会为 0，cloudflare 的限制
   SYSTEM_INIT_MESSAGE: `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023`,
+  // 用户关注应用时发出的欢迎信息
+  WELCOME_MESSAGE: `欢迎使用，可输入 ${commandName.help} 查看当前可用命令`,
 }

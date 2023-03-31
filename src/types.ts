@@ -3,7 +3,7 @@ export interface GlobalConfig {
   DEBUG_MODE: boolean
   // echo 模式
   ECHO_MODE: boolean
-  // 告警地址
+  // 告警 URL
   ALARM_URL: string
   // 当前版本创建时间
   // BUILD_TIMESTAMP: number
@@ -24,10 +24,33 @@ export interface WeChatConfig {
    */
   // 公众号 appid
   // WECHAT_${this.id}_APPID
+  // 公众号 secret
+  // WECHAT_${this.id}_SECRET
   // 微信后台配置的 token
   // WECHAT_${this.id}_TOKEN
   // encodingAESKey
   // WECHAT_${this.id}_AES_KEY
+}
+
+export interface WeWorkConfig {
+  // 处理企业微信请求的最大毫秒数
+  WEWORK_HANDLE_MS_TIME: number
+  // 允许访问的 id 列表
+  WEWORK_ID_LIST: string[]
+
+  /**
+   * 动态环境变量
+   */
+  // admin 用户名单
+  // WEWORK_${this.id}_ADMIN_USER_ID_LIST: string[]
+  // 企业 corpid
+  // WEWORK_${this.id}_APPID
+  // 应用 secret
+  // WEWORK_${this.id}_SECRET
+  // 应用 token
+  // WEWORK_${this.id}_TOKEN
+  // 应用 encodingAESKey
+  // WEWORK_${this.id}_AES_KEY
 }
 
 export interface OpenAiConfig {
@@ -54,11 +77,14 @@ export interface OpenAiConfig {
   MAX_HISTORY_LENGTH: number
   // 全局默认初始化消息
   SYSTEM_INIT_MESSAGE: string
+  // 用户关注应用时发出的欢迎信息
+  WELCOME_MESSAGE: string
 }
 
 export interface Env
   extends Partial<GlobalConfig>,
     Partial<WeChatConfig>,
+    Partial<WeWorkConfig>,
     Partial<OpenAiConfig> {
   // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
   KV: KVNamespace

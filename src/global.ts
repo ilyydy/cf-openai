@@ -35,7 +35,7 @@ export const CONFIG: GlobalConfig = {
   DEBUG_MODE: false,
   // echo 模式
   ECHO_MODE: false,
-  // 告警地址
+  // 告警 URL
   ALARM_URL: '',
   // 当前版本
   // BUILD_TIMESTAMP: 0,
