@@ -42,6 +42,7 @@ export interface OpenAiConfig {
   // OpenAI API key 长度 范围
   OPEN_AI_API_KEY_MIN_LEN: number
   OPEN_AI_API_KEY_MAX_LEN: number
+  OPEN_AI_API_KEY_OCCUPYING_DURATION: number,
   // OpenAI 的用量地址
   OPEN_AI_USAGE: string
   // OpenAI 的免费用量地址

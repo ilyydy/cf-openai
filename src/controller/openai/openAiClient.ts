@@ -1,8 +1,9 @@
 import { CONFIG } from './config'
-import { errorToString, genFail, genSuccess } from '../../utils'
+import { errorToString, genFail, genSuccess, sleep } from '../../utils'
 
 import type openai from 'openai'
 import type { Logger } from '../../utils'
+import * as kv from './kv';
 
 const MODULE = 'src/controller/openai/openAiClient.ts'
 
@@ -40,7 +41,7 @@ export const defaultChatCompletionConfig: Omit<
 }
 
 export class OpenAiClient {
-  constructor(readonly apiKey: string, readonly logger: Logger) {}
+  constructor(readonly apiKey: string, readonly logger: Logger) { }
 
   async base<T = any>(params: {
     basePath?: string
@@ -58,7 +59,7 @@ export class OpenAiClient {
       () => controller.abort(),
       init.timeout || CONFIG.OPEN_AI_API_TIMEOUT_MS
     )
-
+    await this.waitToHoldApiKey(this.apiKey);
     const start = Date.now()
     try {
       const resp = await fetch(`${basePath}${extraPath}`, {
@@ -87,8 +88,7 @@ export class OpenAiClient {
         `${MODULE} 请求 OpenAI 异常 ${Date.now() - start} ${errorToString(err)}`
       )
       return genFail(
-        `请求 OpenAI 异常\n> ${
-          err.name === 'AbortError' ? '请求超时' : err.message
+        `请求 OpenAI 异常\n> ${err.name === 'AbortError' ? '请求超时' : err.message
         }`
       )
     } finally {
@@ -198,5 +198,31 @@ export class OpenAiClient {
     }
 
     return genFail(`OpenAI 返回异常\n> 数据为空`)
+  }
+
+  async waitToHoldApiKey(apiKey: string) {
+    const apiKeyExpiredTimeRes = await kv.getApiKeyOccupied(apiKey);
+    let waitDuration = 0;
+    if (!apiKeyExpiredTimeRes.success) {
+      this.logger.error(`${MODULE} 获取 apiKey '${apiKey}' 的过期时间失败`);
+      return '服务异常'
+    } else {
+      const apiKeyExpiredTime = apiKeyExpiredTimeRes.data;
+      if (!apiKeyExpiredTime) {
+        this.logger.debug(`${MODULE} apiKey '${apiKey}' 未被占用，空值`);
+      } else {
+        waitDuration = parseInt(apiKeyExpiredTime) - Date.now();
+        if (waitDuration <= 0) {
+          this.logger.debug(`${MODULE} apiKey '${apiKey}' 未被占用，已过期 ${apiKeyExpiredTime}`);
+          waitDuration = 0;
+        } else {
+          this.logger.debug(`${MODULE} apiKey '${apiKey}' 已被占用，等待 ${waitDuration}ms`);
+        }
+      }
+    }
+    await kv.setApiKeyOccupied(apiKey, CONFIG.OPEN_AI_API_KEY_OCCUPYING_DURATION + waitDuration / 1000 + 1);
+    if (waitDuration > 0) {
+      await sleep(waitDuration);
+    }
   }
 }

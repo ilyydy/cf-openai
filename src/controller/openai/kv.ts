@@ -47,6 +47,22 @@ export async function getApiKey(
   )
 }
 
+function getApiKeyOccupiedKey(apiKey: string) {
+  return `openai:apiKeyOccupied:${apiKey}`;
+}
+
+export async function getApiKeyOccupied(apiKey: string) {
+  return get<string>(getApiKeyOccupiedKey(apiKey));
+}
+
+export async function setApiKeyOccupied(apiKey: string, duration: number) {
+  const key = getApiKeyOccupiedKey(apiKey);
+  if (duration <= 0) {
+    return del(key);
+  }
+  return set(key, `${Date.now() + duration * 1000}`, { expirationTtl: Math.max(duration, 60) });
+}
+
 export function getChatTypeKey(
   platform: string,
   appid: string,

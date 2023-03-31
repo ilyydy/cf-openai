@@ -8,6 +8,7 @@ export const CONFIG: OpenAiConfig = {
   // OpenAI API key 长度范围
   OPEN_AI_API_KEY_MAX_LEN: 51,
   OPEN_AI_API_KEY_MIN_LEN: 51,
+  OPEN_AI_API_KEY_OCCUPYING_DURATION: 6,
   // OpenAI 的用量地址
   OPEN_AI_USAGE: 'https://api.openai.com/dashboard/billing/usage',
   // OpenAI 的免费用量地址
