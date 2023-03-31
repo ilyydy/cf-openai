@@ -4,6 +4,10 @@ export function getApiKeyWithMask(apiKey: string) {
   return `${apiKey.slice(0, 6)}****${apiKey.slice(apiKey.length - 4)}`
 }
 
+export function getWeChatOpenIdWithMask(text: string): string {
+  return `${text.slice(0, 6)}****${text.slice(text.length - 4)}`
+}
+
 /**
  * @see https://platform.openai.com/tokenizer
  * 估算字符串的 token 数量

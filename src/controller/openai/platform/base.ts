@@ -10,7 +10,7 @@ import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG } from '../config'
 import { OpenAiClient } from '../openAiClient'
 import * as kv from '../kv'
-import { estimateTokenCount, getApiKeyWithMask } from '../utils'
+import { estimateTokenCount, getApiKeyWithMask, getWeChatOpenIdWithMask } from '../utils'
 import { platformMap } from '../../../platform'
 
 import type openai from 'openai'
@@ -599,7 +599,7 @@ export abstract class Base<T extends Platform> {
       '当前系统信息如下: ',
       `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
       `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
-      `当前用户: ${userId}`,
+      `当前用户: ${getWeChatOpenIdWithMask(userId)}`,
     ]
 
     if (GLOBAL_CONFIG.DEBUG_MODE) {
