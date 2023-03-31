@@ -32,7 +32,7 @@ export const CONST = {
 
 export const CONFIG: GlobalConfig = {
   // 调试模式
-  DEBUG_MODE: true,
+  DEBUG_MODE: false,
   // echo 模式
   ECHO_MODE: false,
   // 告警地址
