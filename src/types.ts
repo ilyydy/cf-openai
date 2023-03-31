@@ -57,6 +57,8 @@ export interface OpenAiConfig {
   MIN_CHAT_RESPONSE_TOKEN_NUM: number
   // 串聊最大历史记录长度
   MAX_HISTORY_LENGTH: number
+  // 消息的保存时长，分钟
+  ANSWER_EXPIRES_MINUTES: number
   // 全局默认初始化消息
   SYSTEM_INIT_MESSAGE: string
 }

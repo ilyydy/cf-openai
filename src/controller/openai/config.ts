@@ -23,6 +23,8 @@ export const CONFIG: OpenAiConfig = {
   MIN_CHAT_RESPONSE_TOKEN_NUM: 500,
   // 串聊最大历史记录长度
   MAX_HISTORY_LENGTH: 20,
+  // 消息的保存时长，分钟
+  ANSWER_EXPIRES_MINUTES: 3,
   // 全局默认初始化消息，不能使用 Date.now() 获取当前时间，实际会为 0，cloudflare 的限制
   SYSTEM_INIT_MESSAGE: `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023`,
 }

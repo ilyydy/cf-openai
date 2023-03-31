@@ -3,6 +3,7 @@ import { set, get, getWithMetadata, del, setWithStringify } from '../../kv'
 
 import type openai from 'openai'
 import type { ChatType } from './types'
+import { CONFIG } from './config'
 
 const { TIME } = CONST
 
@@ -243,7 +244,7 @@ export async function setPrompt(
   msgId: string
 ) {
   return setWithStringify(getPromptKey(platform, appid, userId, msgId), 1, {
-    expirationTtl: CONST.TIME.ONE_MIN,
+    expirationTtl: CONFIG.ANSWER_EXPIRES_MINUTES * CONST.TIME.ONE_MIN,
   })
 }
 
@@ -274,7 +275,7 @@ export async function setAnswer(
   return set(
     getAnswerKey(platform, appid, userId, msg.msgId),
     msg.content,
-    { expirationTtl: CONST.TIME.ONE_MIN }
+    { expirationTtl: CONFIG.ANSWER_EXPIRES_MINUTES * CONST.TIME.ONE_MIN }
   )
 }
 

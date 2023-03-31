@@ -424,7 +424,7 @@ export abstract class Base<T extends Platform> {
       fn: this.createNewChat.bind(this),
     },
     [commandName.retry]: {
-      description: '根据 msgId 获取对于回答，回答只会保留 1 分钟',
+      description: '根据 msgId 获取对于回答，回答只会保留 3 分钟',
       roles: [CONST.ROLE.USER],
       fn: this.retry.bind(this),
     },
