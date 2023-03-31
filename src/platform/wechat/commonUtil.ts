@@ -59,9 +59,7 @@ export class CommonUtil {
   static init({
     instance,
     CONFIG,
-  }:
-    | { instance: WeChat; CONFIG: WeChatConfig }
-    | { instance: WeWork; CONFIG: WeWorkConfig }) {
+  }: { instance: WeChat; CONFIG: WeChatConfig } | { instance: WeWork; CONFIG: WeWorkConfig }) {
     const { ctx, request } = instance
 
     mergeFromEnv(request.env, CONFIG)
@@ -149,9 +147,7 @@ export class CommonUtil {
 
       return genSuccess({ plainContent, appid })
     } catch (error) {
-      this.logger.error(
-        `${MODULE} 消息解密异常 ${errorToString(error as Error)}`
-      )
+      this.logger.error(`${MODULE} 消息解密异常 ${errorToString(error as Error)}`)
       return genFail('消息解密异常')
     }
   }
@@ -172,26 +168,15 @@ export class CommonUtil {
       const contentUint8Array = getTextEncoder().encode(plainContent)
       // 获取4B的内容长度的网络字节序
       const msgUint8Array = new Uint8Array(4)
-      new DataView(msgUint8Array.buffer).setUint32(
-        0,
-        contentUint8Array.byteLength,
-        false
-      )
+      new DataView(msgUint8Array.buffer).setUint32(0, contentUint8Array.byteLength, false)
       const appidUint8Array = getTextEncoder().encode(appid)
-      const concatenatedArray = concatUint8Array([
-        random16,
-        msgUint8Array,
-        contentUint8Array,
-        appidUint8Array,
-      ])
+      const concatenatedArray = concatUint8Array([random16, msgUint8Array, contentUint8Array, appidUint8Array])
 
       const aes = this.aes
       const result = aes.encrypt(concatenatedArray)
       return genSuccess(uint8ArrayToBase64(result))
     } catch (error) {
-      this.logger.error(
-        `${MODULE} 消息加密异常 ${errorToString(error as Error)}`
-      )
+      this.logger.error(`${MODULE} 消息加密异常 ${errorToString(error as Error)}`)
       return genFail('消息加密异常')
     }
   }
@@ -230,20 +215,14 @@ export class CommonUtil {
    * 解析收到的 xml 消息
    * @param xmlMsg xml 消息
    */
-  async parseRecvXmlMsg<
-    T = wechatType.RecvPlainData | weworkType.RecvPlainData
-  >(
+  async parseRecvXmlMsg<T = wechatType.RecvPlainData | weworkType.RecvPlainData>(
     xmlMsg: string,
     searchParams: URL['searchParams'],
     appid: string,
     token: string
   ) {
     const res = parseXmlMsg<{
-      xml?:
-        | wechatType.RecvPlainData
-        | wechatType.RecvEncryptMsg
-        | weworkType.RecvEncryptMsg
-        | undefined
+      xml?: wechatType.RecvPlainData | wechatType.RecvEncryptMsg | weworkType.RecvEncryptMsg | undefined
     }>(xmlMsg)
     if (!res.success) return res
 
@@ -254,12 +233,7 @@ export class CommonUtil {
     }
 
     if ('Encrypt' in xmlObj) {
-      const checkSignatureRes = await this.checkSignature(
-        searchParams,
-        'msg_signature',
-        token,
-        xmlObj.Encrypt
-      )
+      const checkSignatureRes = await this.checkSignature(searchParams, 'msg_signature', token, xmlObj.Encrypt)
       if (!checkSignatureRes.success) {
         return genFail(checkSignatureRes.msg)
       }
@@ -270,17 +244,10 @@ export class CommonUtil {
       }
       const { appid: recvAppid, plainContent: plainXmlData } = decryptRes.data
       if (recvAppid !== appid) {
-        this.logger.debug(
-          `${MODULE} appid 不符，收到 ${recvAppid}，应为 ${appid}`
-        )
+        this.logger.debug(`${MODULE} appid 不符，收到 ${recvAppid}，应为 ${appid}`)
         return genFail(errCodeMap.INVALID_APPID.msg)
       }
-      const v = (await this.parseRecvXmlMsg<T>(
-        plainXmlData,
-        searchParams,
-        appid,
-        token
-      )) as {
+      const v = (await this.parseRecvXmlMsg<T>(plainXmlData, searchParams, appid, token)) as {
         success: boolean
         data: {
           isEncrypt: boolean

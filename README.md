@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/ilyydy/cf-openai/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/ilyydy/cf-openai/actions/workflows/github-code-scanning/codeql)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 
-基于 Cloudflare Worker 代理访问 OpenAI API 的服务，目前支持微信公众号(同时多个)接入
+基于 Cloudflare Worker 代理访问 OpenAI API 的服务，目前支持企业微信应用、微信公众号接入
 
 - [cf-openai](#cf-openai)
   - [基本要求](#基本要求)
@@ -74,7 +74,7 @@
    | WEWORK_${ID}_APPID        | 企业微信的 corpid                            | 将 ${ID} 替换成你自定义的 ID                     |
    | WEWORK_${ID}_TOKEN        | 应用的 Token                                 | 将 ${ID} 替换成你自定义的 ID                     |
    | WEWORK_${ID}_AES_KEY      | 应用的 EncodingAESKey                        | 将 ${ID} 替换成你自定义的 ID                     |
-   | WEWORK_ADMIN_USER_ID_LIST | admin 用户名单，多个则以英文逗号分隔         | 可以暂时先不配，等后面知道自己的用户 ID 后再配置 |
+   | WEWORK_${ID}_ADMIN_USER_ID_LIST | admin 用户名单，多个则以英文逗号分隔         | 可以暂时先不配，等后面知道自己的用户 ID 后再配置 |
 
 5. 根据域名和自定义的 ID 得出第三步中的服务器地址(URL)并进行配置，格式为 `https://${域名}/openai/wework/${ID}`。如域名为 `xxx.com`，自定义的 ID 为 `id123`，则服务器地址(URL)为 `https://xxx.com/openai/wework/id123`。虽然提示 `为保障企业数据安全，需配置备案主体与当前企业主体相同或有关联关系的域名`，但实测发现 Cloudflare 绑定自己的域名也可以通过验证，不确定具体规则是什么
 6. 用户可通过 我的企业-微信插件-邀请关注 扫码加入企业，在个人微信进入公司使用应用
@@ -92,6 +92,8 @@
    | WECHAT_${ID}_TOKEN        | 公众号的令牌(Token)                            | 将 ${ID} 替换成你自定义的 ID                                 |
    | WECHAT_${ID}_AES_KEY      | 公众号的消息加解密密钥(EncodingAESKey)         | 将 ${ID} 替换成你自定义的 ID，开启安全模式或兼容模式时才需要 |
    | WECHAT_ADMIN_USER_ID_LIST | admin 用户名单，多个则以英文逗号分隔           | 可以暂时先不配，等后面知道自己的用户 ID 后再配置             |
+   | WECHAT_ADMIN_OPENAI_KEY   | admin 用户的 OpenAI Key                        | 可选，默认会使用 `WECHAT_GUEST_OPENAI_KEY`，优先级高于 OpenAI 的配置       |
+   | WECHAT_GUEST_OPENAI_KEY   | 游客的 OpenAI Key                              | 可选，可被随意使用，优先级高于 OpenAI 的配置，谨慎配置！ |
 
 4. 根据域名和自定义的 ID 得出第二步中服务器配置的服务器地址(URL)并进行配置，格式为 `https://${域名}/openai/wechat/${ID}`。如域名为 `xxx.com`，自定义的 ID 为 `id123`，则服务器地址(URL)为 `https://xxx.com/openai/wechat/id123`
 5. 消息加解密方式一般选明文，启用服务器配置，验证接入成功后即可使用
@@ -116,18 +118,20 @@
 
 ## OpenAI 配置
 
-| 配置名                      | 默认值                                                                                                                                    | 说明                                             |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| CHAT_MODEL                  | gpt-3.5-turbo                                                                                                                             | OpenAI 的模型名称                                |
-| OPEN_AI_API_PREFIX          | <https://api.openai.com/v1>                                                                                                               | OpenAI 的通用 API 前缀                           |
-| OPEN_AI_USAGE               | <https://api.openai.com/dashboard/billing/usage>                                                                                          | OpenAI 的用量地址                                |
-| OPEN_AI_FREE_USAGE          | <https://api.openai.com/dashboard/billing/credit_grants>                                                                                  | OpenAI 的免费用量地址                            |
-| OPEN_AI_API_TIMEOUT_MS      | 30000                                                                                                                                     | OpenAI API 请求超时，毫秒                        |
-| MAX_CHAT_TOKEN_NUM          | 4000                                                                                                                                      | 单次请求 OpenAI 最大 token 数                    |
-| MIN_CHAT_RESPONSE_TOKEN_NUM | 500                                                                                                                                       | OpenAI 回复的最小 token 数                       |
-| MAX_HISTORY_LENGTH          | 20                                                                                                                                        | 串聊最大历史记录长度                             |
-| SYSTEM_INIT_MESSAGE         | You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023 | 发给 OpenAI 的默认第一条系统消息，可用于调整模型 |
-| WELCOME_MESSAGE             | 欢迎使用，可输入 /help 查看当前可用命令                                                                                                   | 用户关注应用时发出的欢迎信息                     |
+| 配置名                      | 默认值                                                                                                                                    | 说明                                                        |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| CHAT_MODEL                  | gpt-3.5-turbo                                                                                                                             | OpenAI 的模型名称                                           |
+| OPEN_AI_API_PREFIX          | <https://api.openai.com/v1>                                                                                                               | OpenAI 的通用 API 前缀                                      |
+| GUEST_KEY                   |                                                                                                                                           | 可选，游客的默认 openai key，可被随意使用，跨平台起效，谨慎配置！ |
+| ADMIN_KEY                   |                                                                                                                                           | 可选，admin 用户的默认 openai key，跨平台起效                     |
+| OPEN_AI_USAGE               | <https://api.openai.com/dashboard/billing/usage>                                                                                          | OpenAI 的用量地址                                           |
+| OPEN_AI_FREE_USAGE          | <https://api.openai.com/dashboard/billing/credit_grants>                                                                                  | OpenAI 的免费用量地址                                       |
+| OPEN_AI_API_TIMEOUT_MS      | 30000                                                                                                                                     | OpenAI API 请求超时，毫秒                                   |
+| MAX_CHAT_TOKEN_NUM          | 4000                                                                                                                                      | 单次请求 OpenAI 最大 token 数                               |
+| MIN_CHAT_RESPONSE_TOKEN_NUM | 500                                                                                                                                       | OpenAI 回复的最小 token 数                                  |
+| MAX_HISTORY_LENGTH          | 20                                                                                                                                        | 串聊最大历史记录长度                                        |
+| SYSTEM_INIT_MESSAGE         | You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023 | 发给 OpenAI 的默认第一条系统消息，可用于调整模型            |
+| WELCOME_MESSAGE             | 欢迎使用，可输入 /help 查看当前可用命令                                                                                                   | 用户关注应用时发出的欢迎信息                                |
 
 ## 全局配置
 

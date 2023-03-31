@@ -3,9 +3,10 @@ import type { Env, GlobalConfig } from './types'
 const MODULE = 'src/global.ts'
 
 const GUEST = '游客'
+const FREE_TRIAL = '试用者'
 const USER = '用户'
 const ADMIN = '管理员'
-export type Role = typeof GUEST | typeof USER | typeof ADMIN
+export type Role = typeof GUEST | typeof USER | typeof ADMIN | typeof FREE_TRIAL
 
 const SHA1 = 'SHA-1'
 const SHA256 = 'SHA-256'
@@ -14,6 +15,7 @@ export type SHA = typeof SHA1 | typeof SHA256
 export const CONST = {
   ROLE: {
     GUEST,
+    FREE_TRIAL,
     USER,
     ADMIN,
   },

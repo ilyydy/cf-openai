@@ -35,6 +35,7 @@ export const defaultCtx = {
   recvData: {} as RecvPlainData,
   userId: '', // 收到消息的 FromUserName
   isEncrypt: true,
+  adminUserIdList: [] as string[],
 }
 
 export type WeWorkCtx = typeof defaultCtx
@@ -78,6 +79,11 @@ export class WeWork implements Platform<'wework', RecvPlainData> {
     if (initErr) {
       return genMyResponse(initErr)
     }
+
+    const env = this.request.env as unknown as Record<string, string>
+    const prefix = `${this.ctx.platform.toUpperCase()}_${this.id}`
+    this.ctx.adminUserIdList = env[`${prefix}_ADMIN_USER_ID_LIST`]?.split(',') ?? []
+
     if (!this.ctx.encodingAESKey) {
       // 企业微信必须配置
       this.logger.error(`${MODULE} encodingAESKey 未配置`)
@@ -127,9 +133,7 @@ export class WeWork implements Platform<'wework', RecvPlainData> {
     }
 
     const decryptRes = this.commonUtil.decryptContent(echostr)
-    this.logger.debug(
-      `${MODULE} echostr 解密结果 ${JSON.stringify(decryptRes)}`
-    )
+    this.logger.debug(`${MODULE} echostr 解密结果 ${JSON.stringify(decryptRes)}`)
     if (!decryptRes.success) {
       return genMyResponse(decryptRes.msg)
     }
@@ -168,10 +172,7 @@ export class WeWork implements Platform<'wework', RecvPlainData> {
     return handleRecvData(recvPlainData)
   }
 
-  genSendTextXmlMsg(
-    content: string,
-    options = { timestamp: Math.floor(Date.now() / 1000) }
-  ) {
+  genSendTextXmlMsg(content: string, options = { timestamp: Math.floor(Date.now() / 1000) }) {
     const { FromUserName, ToUserName, AgentID } = this.ctx.recvData
 
     const msg = `<xml>
@@ -187,10 +188,6 @@ export class WeWork implements Platform<'wework', RecvPlainData> {
   }
 
   async genSendEncryptXmlMsg(xmlMsg: string) {
-    return this.commonUtil.genSendEncryptXmlMsg(
-      xmlMsg,
-      this.ctx.appid,
-      this.ctx.token
-    )
+    return this.commonUtil.genSendEncryptXmlMsg(xmlMsg, this.ctx.appid, this.ctx.token)
   }
 }

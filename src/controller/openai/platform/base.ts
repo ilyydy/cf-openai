@@ -51,12 +51,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
   async openAiHandle(msgContent: string, msgId: string, msgTokenCount: number) {
     const openAi = new OpenAiClient(this.ctx.apiKey, this.logger)
 
-    const respMsg = await this.openAiChat(
-      openAi,
-      msgContent,
-      msgId,
-      msgTokenCount
-    )
+    const respMsg = await this.openAiChat(openAi, msgContent, msgId, msgTokenCount)
     return respMsg
   }
 
@@ -78,12 +73,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
   /**
    * 调用 OpenAI chat 接口
    */
-  async openAiChat(
-    openai: OpenAiClient,
-    msgContent: string,
-    msgId: string,
-    msgTokenCount: number
-  ) {
+  async openAiChat(openai: OpenAiClient, msgContent: string, msgId: string, msgTokenCount: number) {
     const { platform, userId, appid } = this.platform.ctx
 
     // 根据 msgId 看是否收到过
@@ -92,9 +82,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
       kv.getAnswer(platform, appid, userId, msgId),
     ])
     if (!promptRes.success || !answerRes.success) {
-      this.logger.info(
-        `${MODULE} ${msgId} 获取聊天记录失败 ${promptRes.msg} ${answerRes.msg}`
-      )
+      this.logger.info(`${MODULE} ${msgId} 获取聊天记录失败 ${promptRes.msg} ${answerRes.msg}`)
       return `获取聊天记录失败 ${promptRes.msg} ${answerRes.msg}`
     }
     if (promptRes.data) {
@@ -143,9 +131,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
       kv.getLastChatAnswer(platform, appid, userId),
     ])
     if (!lastChatPromptRes.success || !lastChatAnswerRes.success) {
-      this.logger.info(
-        `${MODULE} 获取聊天记录失败 ${lastChatPromptRes.msg} ${lastChatAnswerRes.msg}`
-      )
+      this.logger.info(`${MODULE} 获取聊天记录失败 ${lastChatPromptRes.msg} ${lastChatAnswerRes.msg}`)
       return `获取聊天记录失败 ${lastChatPromptRes.msg} ${lastChatAnswerRes.msg}`
     }
 
@@ -160,8 +146,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     }
 
     // 没有 conversationId 则用 reqId 作为 conversationId
-    const conversationId =
-      lastChatPromptRes.data?.conversationId ?? this.request.reqId
+    const conversationId = lastChatPromptRes.data?.conversationId ?? this.request.reqId
     this.ctx.conversationId = conversationId
 
     const messagesRes = await this.buildChatMessages({
@@ -174,9 +159,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
       return messagesRes.msg
     }
     const { messages, newHistory } = messagesRes.data
-    this.logger.debug(
-      `${MODULE} messages 长度 ${messages.length} newHistory 长度 ${newHistory.length}`
-    )
+    this.logger.debug(`${MODULE} messages 长度 ${messages.length} newHistory 长度 ${newHistory.length}`)
 
     // 更新历史
     this.request.ctx.waitUntil(
@@ -199,9 +182,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     const { msg: respMsg, finishReasonZh, usage } = r.data
 
     // 结合回复再更新历史
-    this.request.ctx.waitUntil(
-      this.updateHistory(msgId, newHistory, respMsg, usage)
-    )
+    this.request.ctx.waitUntil(this.updateHistory(msgId, newHistory, respMsg, usage))
 
     let responseMsgContent = respMsg.content
     if (r.data.finishReason !== 'stop') {
@@ -220,12 +201,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     lastChatAnswer: kv.Msg | null
   }) {
     const { platform, appid, userId } = this.platform.ctx
-    const {
-      msgTokenCount: recvMsgTokenCount,
-      lastChatAnswer,
-      lastChatPrompt,
-      msgContent,
-    } = params
+    const { msgTokenCount: recvMsgTokenCount, lastChatAnswer, lastChatPrompt, msgContent } = params
 
     const initMsg = CONFIG.SYSTEM_INIT_MESSAGE
     const initMsgTokenCount = estimateTokenCount(initMsg)
@@ -269,12 +245,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     this.logger.debug(`${MODULE} tokenNumForHistory ${tokenNumForHistory}`)
 
     // 获取历史
-    const historyRes = await kv.getHistory(
-      platform,
-      appid,
-      userId,
-      lastChatPrompt.conversationId
-    )
+    const historyRes = await kv.getHistory(platform, appid, userId, lastChatPrompt.conversationId)
     if (!historyRes.success) {
       this.logger.debug(`${MODULE} 获取历史失败 ${historyRes.msg}`)
       return genFail('获取聊天记录失败')
@@ -343,15 +314,12 @@ export abstract class Base<T extends Platform<PlatformType>> {
     const { conversationId } = this.ctx
 
     // 用 token 准确值更新
-    oldHistory[oldHistory.length - 1].tokenNum = oldHistory.reduce(
-      (total, item, idx) => {
-        if (idx === oldHistory.length - 1) {
-          return total - item.tokenNum
-        }
-        return total
-      },
-      usage.prompt_tokens
-    )
+    oldHistory[oldHistory.length - 1].tokenNum = oldHistory.reduce((total, item, idx) => {
+      if (idx === oldHistory.length - 1) {
+        return total - item.tokenNum
+      }
+      return total
+    }, usage.prompt_tokens)
     // 回答放入历史
     oldHistory.push({ ...responseMsg, tokenNum: usage.completion_tokens })
     const promiseList = [
@@ -362,11 +330,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
       }),
     ]
 
-    const lastChatPromptRes = await kv.getLastChatPrompt(
-      platform,
-      appid,
-      userId
-    )
+    const lastChatPromptRes = await kv.getLastChatPrompt(platform, appid, userId)
     if (lastChatPromptRes.success) {
       // kv 存的还是这次提问，没有被其他提问覆盖
       if (lastChatPromptRes.data?.msgId === msgId) {
@@ -379,11 +343,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
           })
         )
       } else {
-        this.logger.info(
-          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${
-            lastChatPromptRes.data?.msgId ?? ''
-          }`
-        )
+        this.logger.info(`${MODULE} kv 存的提问已由 ${msgId} 变为 ${lastChatPromptRes.data?.msgId ?? ''}`)
       }
     }
 
@@ -391,7 +351,8 @@ export abstract class Base<T extends Platform<PlatformType>> {
   }
 
   protected commands = {
-    // TODO admin
+    // TODO admin 更多能力
+    // TODO 角色能力配置化？
     [commandName.help]: {
       description: '获取命令帮助信息',
       roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
@@ -408,24 +369,23 @@ export abstract class Base<T extends Platform<PlatformType>> {
       fn: this.unbindKey.bind(this),
     },
     [commandName.testKey]: {
-      description:
-        '调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量',
+      description: '调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量',
       roles: [CONST.ROLE.USER],
       fn: this.testKey.bind(this),
     },
     [commandName.setChatType]: {
       description: `切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量`,
-      roles: [CONST.ROLE.USER],
+      roles: [CONST.ROLE.USER, CONST.ROLE.FREE_TRIAL],
       fn: this.setChatType.bind(this),
     },
     [commandName.newChat]: {
       description: '清除之前的串聊历史记录，开始新的串聊',
-      roles: [CONST.ROLE.USER],
+      roles: [CONST.ROLE.USER, CONST.ROLE.FREE_TRIAL],
       fn: this.createNewChat.bind(this),
     },
     [commandName.retry]: {
-      description: '根据 msgId 获取对于回答，回答只会保留 1 分钟',
-      roles: [CONST.ROLE.USER],
+      description: '根据 msgId 获取对应回答，回答只会保留 1 分钟',
+      roles: [CONST.ROLE.USER, CONST.ROLE.FREE_TRIAL],
       fn: this.retry.bind(this),
     },
     [commandName.usage]: {
@@ -482,10 +442,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     }
 
     const msg =
-      '当前支持以下命令:\n' +
-      cmdList
-        .map(({ name, description }) => `⭐【${name}】: ${description}`)
-        .join('\n')
+      '当前支持以下命令:\n' + cmdList.map(({ name, description }) => `⭐【${name}】: ${description}`).join('\n')
     return genSuccess(msg)
   }
 
@@ -561,9 +518,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
         return genSuccess(answerRes.data)
       }
       // 否则提示用户稍等重试
-      return genSuccess(
-        `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
-      )
+      return genSuccess(`正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`)
     }
 
     return genSuccess('该 msgId 无记录，可能已过期')
@@ -577,9 +532,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     if (!r.success) {
       return genFail(`获取失败 ${r.msg}`)
     }
-    const msg = `${startDate} ~ ${endDate}(UTC时间)已用: $${
-      r.data.total_usage / 100
-    }`
+    const msg = `${startDate} ~ ${endDate}(UTC时间)已用: $${r.data.total_usage / 100}`
     return genSuccess(msg)
   }
 
@@ -605,12 +558,12 @@ export abstract class Base<T extends Platform<PlatformType>> {
     ]
 
     if (GLOBAL_CONFIG.DEBUG_MODE) {
-      msgList.push(
-        `⭐OpenAI 参数: ${JSON.stringify(CONFIG.OPEN_AI_API_EXTRA_PARAMS)}`
-      )
+      msgList.push(`⭐OpenAI 参数: ${JSON.stringify(CONFIG.OPEN_AI_API_EXTRA_PARAMS)}`)
       msgList.push(`⭐初始化文本: ${CONFIG.SYSTEM_INIT_MESSAGE}`)
       msgList.push(`⭐当前 reqId: ${this.request.reqId}`)
-      if (conversationId) msgList.push(`⭐当前 conversationId: ${conversationId}`)
+      if (conversationId) {
+        msgList.push(`⭐当前 conversationId: ${conversationId}`)
+      }
       // TODO 更多信息
       // TODO admin
     }
@@ -635,9 +588,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
           this.logger.debug(`${MODULE} 命令执行结果 ${JSON.stringify(r)}`)
           return r
         } catch (error) {
-          this.logger.error(
-            `${MODULE} 命令执行错误 ${errorToString(error as Error)}`
-          )
+          this.logger.error(`${MODULE} 命令执行错误 ${errorToString(error as Error)}`)
           return genFail('服务异常：执行命令是失败')
         }
       }

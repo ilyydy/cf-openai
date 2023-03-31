@@ -26,6 +26,8 @@ export const CONFIG: WeChatConfig = {
   WECHAT_HANDLE_MS_TIME: 13000,
   // 允许访问的 id 列表
   WECHAT_ID_LIST: [],
+  WECHAT_ADMIN_OPENAI_KEY: '',
+  WECHAT_GUEST_OPENAI_KEY: '',
 }
 
 export const defaultCtx = {

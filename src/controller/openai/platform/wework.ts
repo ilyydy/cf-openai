@@ -1,6 +1,6 @@
 import { genFail, genSuccess, genMyResponse } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
-import { CONFIG } from '../config'
+import { CONFIG as OPENAI_CONFIG } from '../config'
 import * as kv from '../kv'
 import { estimateTokenCount } from '../utils'
 import { CONFIG as WE_WORK_CONFIG } from '../../../platform/wechat/wework'
@@ -12,12 +12,43 @@ const MODULE = 'src/openai/platform/wework.ts'
 
 export class WeWorkHandler extends WeChatBaseHandler<WeWork> {
   async initCtx() {
-    const { platform, appid, userId } = this.platform.ctx
+    const { platform, appid, userId, adminUserIdList } = this.platform.ctx
+    const { role } = this.ctx
 
-    if (WE_WORK_CONFIG.WEWORK_ID_LIST.includes(userId)) {
-      this.ctx.role.add(CONST.ROLE.ADMIN)
+    const apiKeyRes = await kv.getApiKey(platform, appid, userId)
+    if (!apiKeyRes.success) {
+      this.logger.debug(`${MODULE} 获取 api key 失败`)
+      return '服务异常'
     }
 
-    return super.initCtx()
+    const isAdmin = adminUserIdList.includes(userId)
+    if (isAdmin) {
+      role.add(CONST.ROLE.ADMIN)
+    }
+    const globalAdminOpenAiKey = OPENAI_CONFIG.ADMIN_KEY
+    const globalGuestOpenAiKey = OPENAI_CONFIG.GUEST_KEY
+
+    // 先用自己的 key
+    if (apiKeyRes.data.value) {
+      this.ctx.apiKey = apiKeyRes.data.value
+      role.delete(CONST.ROLE.GUEST)
+      this.ctx.role.add(CONST.ROLE.USER)
+      // 距离还有 1 天过期时重新 set
+      if (apiKeyRes.data.metadata.expireTime - Date.now() <= CONST.TIME.ONE_DAY * 1000) {
+        await kv.setApiKey(platform, appid, userId, this.ctx.apiKey)
+      }
+    } else if (globalGuestOpenAiKey) {
+      this.ctx.apiKey = globalGuestOpenAiKey
+      role.add(CONST.ROLE.FREE_TRIAL)
+    } else if (isAdmin && globalAdminOpenAiKey) {
+      this.ctx.apiKey = globalAdminOpenAiKey
+    }
+
+    if (!this.ctx.apiKey) {
+      this.logger.debug(`${MODULE} 没有 api key`)
+      return
+    }
+
+    return this.initChatType()
   }
 }
