@@ -1,3 +1,4 @@
+import { KvObject } from './../kv';
 import {
   genFail,
   genSuccess,
@@ -103,6 +104,7 @@ export abstract class Base<T extends Platform> {
         this.logger.debug(`${MODULE} ${msgId} 已有回答直接返回`)
         return answerRes.data
       }
+      await KvObject.lastMessage(userId).set(msgId);
       // 否则提示用户稍等重试
       return this.getRetryMessage(msgId)
     }
@@ -156,6 +158,7 @@ export abstract class Base<T extends Platform> {
         return lastChatAnswerRes.data.content
       }
       // 否则提示用户稍等重试
+      await KvObject.lastMessage(userId).set(msgId);
       return this.getRetryMessage(msgId)
     }
 
@@ -380,8 +383,7 @@ export abstract class Base<T extends Platform> {
         )
       } else {
         this.logger.info(
-          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${
-            lastChatPromptRes.data?.msgId ?? ''
+          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${lastChatPromptRes.data?.msgId ?? ''
           }`
         )
       }
@@ -427,6 +429,16 @@ export abstract class Base<T extends Platform> {
       description: '根据 msgId 获取对于回答，回答只会保留 3 分钟',
       roles: [CONST.ROLE.USER],
       fn: this.retry.bind(this),
+    },
+    [commandName.retryLastMessage]: {
+      description: '重试上一个延迟的回答',
+      roles: [CONST.ROLE.USER],
+      fn: this.retryLastMessage.bind(this),
+    },
+    [commandName.retryLastMessage2]: {
+      description: '重试上一个延迟的回答',
+      roles: [CONST.ROLE.USER],
+      fn: this.retryLastMessage.bind(this),
     },
     [commandName.usage]: {
       description: '获取本月用量信息，可能有 5 分钟左右的延迟',
@@ -547,7 +559,7 @@ export abstract class Base<T extends Platform> {
     if (!msgId || !msgId.trim()) {
       return genFail('msgId 为空')
     }
-    msgId= msgId.trim().split("\n")[0];
+    msgId = msgId.trim().split("\n")[0];
 
     const [promptRes, answerRes] = await Promise.all([
       kv.getPrompt(platform, appid, userId, msgId),
@@ -568,6 +580,13 @@ export abstract class Base<T extends Platform> {
     return genSuccess('该 msgId 无记录，可能已过期')
   }
 
+  protected async retryLastMessage(params: any) {
+    const userId = this.platform.ctx.userId
+    const msgId = await KvObject.lastMessage(userId).get() ?? ''
+    this.logger.debug(`retry last message ${msgId}`);
+    return await this.retry(msgId);
+  }
+
   protected async getUsage(params: any) {
     const startDate = new Date(new Date().setDate(1)).toISOString().slice(0, 10)
     const endDate = new Date().toISOString().slice(0, 10)
@@ -576,9 +595,7 @@ export abstract class Base<T extends Platform> {
     if (!r.success) {
       return genFail(`获取失败 ${r.msg}`)
     }
-    const msg = `${startDate} ~ ${endDate}(UTC时间)已用: $${
-      r.data.total_usage / 100
-    }`
+    const msg = `${startDate} ~ ${endDate}(UTC时间)已用: $${r.data.total_usage / 100}`
     return genSuccess(msg)
   }
 
@@ -660,7 +677,8 @@ export abstract class Base<T extends Platform> {
 
   protected getRetryMessage(msgId: string): string {
     // return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`;
-    return `${commandName.retry} ${msgId}\n正在处理中，请稍后用使用该命令获取回答`;
+    return `${commandName.retry} ${msgId}` +
+      '\n处理中，请稍后输入 .. 获取回答';
   }
 }
 
@@ -678,6 +696,8 @@ export const commandName = {
   setEnv: '/setEnv',
   system: '/system',
   faq: '/faq',
+  retryLastMessage: '..',
+  retryLastMessage2: '。。',
   // TODO 发消息给开发者
 }
 

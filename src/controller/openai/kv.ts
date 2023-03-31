@@ -287,3 +287,45 @@ export async function getAnswer(
 ) {
   return get(getAnswerKey(platform, appid, userId, msgId))
 }
+
+export class KvObject<T = string> {
+  constructor(readonly key: string, readonly ttl: number) {
+  }
+
+  async get(): Promise<T | null> {
+    const result = await get<T>(this.key);
+    if (result.success) {
+      return result.data;
+    }
+    return null;
+  }
+
+  async set(value: T) {
+    const options : KVNamespacePutOptions = { expirationTtl: Math.max(this.ttl, 60) }
+    if (typeof value === 'string') {
+      return await set(this.key, value.toString(), options);
+    }
+    return await setWithStringify(this.key, value, options);
+  }
+
+  async del() {
+    return await del(this.key);
+  }
+
+  expires(seconds: number): KvObject<T> {
+    return new KvObject<T>(this.key, seconds);
+  }
+
+  child<T>(key: string): KvObject<T> {
+    return KvObject.of<T>(this.key, key).expires(this.ttl);
+  }
+
+  static of<T = string>(...parts: string[]): KvObject<T> {
+    return new KvObject<T>(parts.join(':'), 60);
+  }
+
+  static lastMessage(userId: string): KvObject<string> {
+    return KvObject.of("lastMessage", userId).expires(3 * 60);
+  }
+
+}
