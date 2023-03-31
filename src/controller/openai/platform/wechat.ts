@@ -22,7 +22,7 @@ export class WeChatHandler extends Base<WeChat> {
           this.ctx.chatType === '单聊' ||
           !this.platform.ctx.recvMsg.MsgId
           ? '服务异常，请稍后重试'
-          : `正在处理中，请稍后用\n${commandName.retry} ${this.platform.ctx.recvMsg.MsgId}\n命令获取回答`
+          : this.getRetryMessage(this.platform.ctx.recvMsg.MsgId)
       return this.genWeChatTextXmlResponse(msg)
     })
   }

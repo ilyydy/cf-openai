@@ -104,7 +104,7 @@ export abstract class Base<T extends Platform> {
         return answerRes.data
       }
       // 否则提示用户稍等重试
-      return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
+      return this.getRetryMessage(msgId)
     }
 
     await kv.setPrompt(platform, appid, userId, msgId)
@@ -156,7 +156,7 @@ export abstract class Base<T extends Platform> {
         return lastChatAnswerRes.data.content
       }
       // 否则提示用户稍等重试
-      return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
+      return this.getRetryMessage(msgId)
     }
 
     // 没有 conversationId 则用 reqId 作为 conversationId
@@ -547,6 +547,7 @@ export abstract class Base<T extends Platform> {
     if (!msgId || !msgId.trim()) {
       return genFail('msgId 为空')
     }
+    msgId= msgId.trim().split("\n")[0];
 
     const [promptRes, answerRes] = await Promise.all([
       kv.getPrompt(platform, appid, userId, msgId),
@@ -561,9 +562,7 @@ export abstract class Base<T extends Platform> {
         return genSuccess(answerRes.data)
       }
       // 否则提示用户稍等重试
-      return genSuccess(
-        `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
-      )
+      return genSuccess(this.getRetryMessage(msgId))
     }
 
     return genSuccess('该 msgId 无记录，可能已过期')
@@ -657,6 +656,11 @@ export abstract class Base<T extends Platform> {
     this.platform.logger = logger
     this.logger = logger
     return logger
+  }
+
+  protected getRetryMessage(msgId: string): string {
+    // return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`;
+    return `${commandName.retry} ${msgId}\n正在处理中，请稍后用使用该命令获取回答`;
   }
 }
 
