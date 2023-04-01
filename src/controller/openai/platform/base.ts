@@ -11,7 +11,7 @@ import { CONFIG, commandName } from '../config'
 import { OpenAiClient } from '../openAiClient'
 import * as kv from '../kv'
 import * as globalKV from '../../../kv'
-import { estimateTokenCount, getApiKeyWithMask } from '../utils'
+import { estimateTokenCount, getApiKeyWithMask, getTextWithMask } from '../utils'
 import { platformMap } from '../../../platform'
 
 import type openai from 'openai'
@@ -394,7 +394,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
       fn: this.createNewChat.bind(this),
     },
     [commandName.retry]: {
-      description: '根据 msgId 获取对应回答，回答只会保留 1 分钟',
+      description: `根据 msgId 获取对应回答，回答只会保留 ${CONFIG.ANSWER_EXPIRES_MINUTES} 分钟`,
       roles: [CONST.ROLE.USER, CONST.ROLE.FREE_TRIAL],
       fn: this.retry.bind(this),
     },
@@ -569,12 +569,14 @@ export abstract class Base<T extends Platform<PlatformType>> {
   protected commandSystem(params: any) {
     const { platform, userId, appid } = this.platform.ctx
     const { apiKey, conversationId, chatType, role } = this.ctx
+    const isAdmin = role.has(CONST.ROLE.ADMIN)
+
     const msgList = [
       '当前系统信息如下: ',
       `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
       `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
       `⭐OpenAI 对话模式: ${chatType}`,
-      `⭐当前用户: ${userId}`,
+      `⭐当前用户: ${isAdmin ? userId : getTextWithMask(userId)}`,
     ]
 
     if (GLOBAL_CONFIG.DEBUG_MODE) {
@@ -588,7 +590,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
       // TODO admin
     }
 
-    if (role.has(CONST.ROLE.ADMIN)) {
+    if (isAdmin) {
       const token = GLOBAL_CONFIG.ADMIN_AUTH_TOKEN ? `${GLOBAL_CONFIG.ADMIN_AUTH_TOKEN.slice(0, 4)}****` : '无'
       msgList.push(`⭐当前 ADMIN_AUTH_TOKEN: ${token}`)
     }

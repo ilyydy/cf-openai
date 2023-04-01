@@ -48,4 +48,41 @@ describe('src/controller/openai/utils.ts', () => {
       }
     }
   })
+
+  it('get text with mask ', () => {
+    const testData = [
+      {
+        text: 'a',
+        expect: 'a',
+      },
+      {
+        text: 'ab',
+        expect: 'a****',
+      },
+      {
+        text: 'abc',
+        expect: 'a****c',
+      },
+      {
+        text: 'abcd',
+        expect: 'a****d',
+      },
+      {
+        text: 'abcdef',
+        expect: 'ab****ef',
+      },
+      {
+        text: '12345678901234567890',
+        expect: '1234****7890',
+      },
+      {
+        text: '123456789012345678901',
+        expect: '1234****8901',
+      },
+    ]
+
+    for (const i of testData) {
+      expect(utils.getTextWithMask(i.text)).toBe(i.expect)
+    }
+  })
 })
