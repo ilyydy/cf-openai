@@ -214,7 +214,7 @@ export async function setPrompt(
   msgId: string
 ) {
   return setWithStringify(getPromptKey(platform, appid, userId, msgId), 1, {
-    expirationTtl: CONST.TIME.ONE_MIN,
+    expirationTtl: TIME.ONE_MIN,
   })
 }
 
@@ -245,7 +245,7 @@ export async function setAnswer(
   return set(
     getAnswerKey(platform, appid, userId, msg.msgId),
     msg.content,
-    { expirationTtl: CONST.TIME.ONE_MIN }
+    { expirationTtl: TIME.ONE_MIN }
   )
 }
 

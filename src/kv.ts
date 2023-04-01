@@ -89,7 +89,7 @@ export async function getWithRefresh<T>(
   try {
     const { value, metadata } = await KV.getWithMetadata<{ [idx: string]: number }>(key, options)
     if (!metadata || !metadata[options.expireTimeKey]) {
-      logger.error(`${MODULE} getWithRefresh metadata 不符合预期`)
+      logger.info(`${MODULE} getWithRefresh key ${key} metadata ${JSON.stringify(metadata)}`)
       return genSuccess(value as T | null)
     }
 
@@ -105,4 +105,21 @@ export async function getWithRefresh<T>(
     logger.error(`${MODULE} kv getWithRefresh ${key} fail ${errorToString(error as Error)}`)
     return genFail(`服务kv异常`)
   }
+}
+
+export function getAdminKey(userId: string) {
+  return `admin:${userId}`
+}
+
+export async function setAdmin(userId: string) {
+  return setWithExpireMetaData(getAdminKey(userId), '1')
+}
+
+export async function isAdmin(userId: string) {
+  const r = await getWithRefresh<string>(getAdminKey(userId))
+  if (r.success) {
+    return genSuccess(!!r.data)
+  }
+
+  return r
 }

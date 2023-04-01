@@ -21,7 +21,7 @@ export class WeChatHandler extends WeChatBaseHandler<WeChat> {
       return '服务异常'
     }
 
-    const isAdmin = WE_CHAT_CONFIG.WECHAT_ADMIN_USER_ID_LIST.includes(userId)
+    const isAdmin = WE_CHAT_CONFIG.WECHAT_ADMIN_USER_ID_LIST.includes(userId) || (await this.isGlobalAdmin())
     if (isAdmin) {
       role.add(CONST.ROLE.ADMIN)
     }

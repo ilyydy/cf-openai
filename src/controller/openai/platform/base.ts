@@ -10,6 +10,7 @@ import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG, commandName } from '../config'
 import { OpenAiClient } from '../openAiClient'
 import * as kv from '../kv'
+import * as globalKV from '../../../kv'
 import { estimateTokenCount, getApiKeyWithMask } from '../utils'
 import { platformMap } from '../../../platform'
 
@@ -350,6 +351,15 @@ export abstract class Base<T extends Platform<PlatformType>> {
     await Promise.all(promiseList)
   }
 
+  /**
+   * 需要在 platform 有 userId 之后调用
+   */
+  async isGlobalAdmin() {
+    const r = await globalKV.isAdmin(this.platform.ctx.userId)
+    if (r.success && r.data) return true
+    return false
+  }
+
   protected commands = {
     // TODO admin 更多能力
     // TODO 角色能力配置化？
@@ -419,6 +429,12 @@ export abstract class Base<T extends Platform<PlatformType>> {
       roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
       fn: getFaqMsg,
     },
+    [commandName.adminAuth]: {
+      description: '通过 token 认证成为 admin',
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
+      fn: this.adminAuth.bind(this),
+      hidden: true, // 隐藏命令
+    },
   }
 
   protected getHelpMsg(subcommand: string) {
@@ -428,14 +444,14 @@ export abstract class Base<T extends Platform<PlatformType>> {
     if (subcommand) {
       const obj = this.commands[subcommand]
       const roles = obj.roles as Role[]
-      if (!obj || roles.every((i) => !role.has(i))) {
+      if (!obj || roles.every((i) => !role.has(i)) || obj.hidden) {
         return genFail(`命令 ${subcommand} 不存在`)
       }
       cmdList.push({ name: subcommand, description: obj.description })
     } else {
       Object.entries(this.commands).forEach(([name, obj]) => {
         const roles = obj.roles as Role[]
-        if (roles.some((i) => role.has(i))) {
+        if (roles.some((i) => role.has(i)) && !obj.hidden) {
           cmdList.push({ name, description: obj.description })
         }
       })
@@ -548,13 +564,13 @@ export abstract class Base<T extends Platform<PlatformType>> {
 
   protected commandSystem(params: any) {
     const { platform, userId, appid } = this.platform.ctx
-    const { apiKey, conversationId, chatType } = this.ctx
+    const { apiKey, conversationId, chatType, role } = this.ctx
     const msgList = [
       '当前系统信息如下: ',
       `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
       `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
       `⭐OpenAI 对话模式: ${chatType}`,
-      `当前用户: ${userId}`,
+      `⭐当前用户: ${userId}`,
     ]
 
     if (GLOBAL_CONFIG.DEBUG_MODE) {
@@ -568,8 +584,30 @@ export abstract class Base<T extends Platform<PlatformType>> {
       // TODO admin
     }
 
+    if (role.has(CONST.ROLE.ADMIN)) {
+      const token = GLOBAL_CONFIG.ADMIN_AUTH_TOKEN ? `${GLOBAL_CONFIG.ADMIN_AUTH_TOKEN.slice(0, 4)}****` : '无'
+      msgList.push(`⭐当前 ADMIN_AUTH_TOKEN: ${token}`)
+    }
+
     const msg = msgList.join('\n')
     return genSuccess(msg)
+  }
+
+  // TODO 限频/拉黑等安全防控
+  protected async adminAuth(token: string) {
+    if (!GLOBAL_CONFIG.ADMIN_AUTH_TOKEN) {
+      return genFail('')
+    }
+    if (token !== GLOBAL_CONFIG.ADMIN_AUTH_TOKEN) {
+      return genFail('失败')
+    }
+
+    const setRes = await globalKV.setAdmin(this.platform.ctx.userId)
+    if (!setRes.success) {
+      return genFail(setRes.msg)
+    }
+
+    return genSuccess('成功')
   }
 
   protected async handleCommandMessage(message: string) {
@@ -620,6 +658,7 @@ export const faqList = [
   `串聊会带上历史消息，一方面会消耗更多用量，另一方面容易达到 OpenAI 消息总长上限，应常用使用命令 ${commandName.newChat} 清除历史`,
   '串聊避免短时间连续提问，会影响历史消息连贯性',
   '串聊历史记录不使用则最长保留一天，OpenAI api key 不使用最长保留一个月',
+  'Cloudflare 不同节点数据同步最长需要 1 分钟，因此可能出现绑定 key、切换聊天类型等操作后未立即生效的情况',
 ]
 
 export function getFaqMsg() {

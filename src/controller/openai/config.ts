@@ -14,6 +14,7 @@ export const commandName = {
   setEnv: '/setEnv',
   system: '/system',
   faq: '/faq',
+  adminAuth: '/adminAuth',
   // TODO 发消息给开发者
 }
 
