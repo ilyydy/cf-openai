@@ -22,12 +22,8 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
       this.logger.debug(`${MODULE} 获取聊天类型失败`)
       return '服务异常'
     }
-    if (chatTypeRes.data.value) {
-      this.ctx.chatType = chatTypeRes.data.value
-      // 距离还有 1 天过期时重新 set
-      if (chatTypeRes.data.metadata.expireTime - Date.now() <= CONST.TIME.ONE_DAY * 1000) {
-        await kv.setChatType(platform, appid, userId, this.ctx.chatType)
-      }
+    if (chatTypeRes.data) {
+      this.ctx.chatType = chatTypeRes.data
     }
   }
 

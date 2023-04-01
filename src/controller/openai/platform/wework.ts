@@ -29,14 +29,10 @@ export class WeWorkHandler extends WeChatBaseHandler<WeWork> {
     const globalGuestOpenAiKey = OPENAI_CONFIG.GUEST_KEY
 
     // 先用自己的 key
-    if (apiKeyRes.data.value) {
-      this.ctx.apiKey = apiKeyRes.data.value
+    if (apiKeyRes.data) {
+      this.ctx.apiKey = apiKeyRes.data
       role.delete(CONST.ROLE.GUEST)
       this.ctx.role.add(CONST.ROLE.USER)
-      // 距离还有 1 天过期时重新 set
-      if (apiKeyRes.data.metadata.expireTime - Date.now() <= CONST.TIME.ONE_DAY * 1000) {
-        await kv.setApiKey(platform, appid, userId, this.ctx.apiKey)
-      }
     } else if (globalGuestOpenAiKey) {
       this.ctx.apiKey = globalGuestOpenAiKey
       role.add(CONST.ROLE.FREE_TRIAL)

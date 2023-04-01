@@ -1,5 +1,5 @@
 import { CONST } from '../../global'
-import { set, get, getWithMetadata, del, setWithStringify } from '../../kv'
+import { set, get, del, setWithStringify, getWithRefresh, setWithExpireMetaData } from '../../kv'
 
 import type openai from 'openai'
 import type { ChatType } from './types'
@@ -16,10 +16,7 @@ export async function setApiKey(
   userId: string,
   key: string
 ) {
-  return set(getApiKeyKey(platform, appid, userId), key, {
-    expirationTtl: TIME.ONE_MONTH,
-    metadata: { expireTime: Date.now() + TIME.ONE_MONTH * 1000 },
-  })
+  return setWithExpireMetaData(getApiKeyKey(platform, appid, userId), key)
 }
 
 export async function delApiKey(
@@ -39,12 +36,7 @@ export async function getApiKey(
   appid: string,
   userId: string
 ) {
-  return getWithMetadata<string, Metadata>(
-    getApiKeyKey(platform, appid, userId),
-    {
-      // cacheTtl: 3600,
-    }
-  )
+  return getWithRefresh<string>(getApiKeyKey(platform, appid, userId))
 }
 
 export function getChatTypeKey(
@@ -61,10 +53,7 @@ export async function setChatType(
   userId: string,
   key: string
 ) {
-  return set(getChatTypeKey(platform, appid, userId), key, {
-    expirationTtl: TIME.ONE_MONTH,
-    metadata: { expireTime: Date.now() + TIME.ONE_MONTH * 1000 },
-  })
+  return setWithExpireMetaData(getChatTypeKey(platform, appid, userId), key)
 }
 
 export async function delChatType(
@@ -80,9 +69,7 @@ export async function getChatType(
   appid: string,
   userId: string
 ) {
-  return getWithMetadata<ChatType, Metadata>(
-    getChatTypeKey(platform, appid, userId)
-  )
+  return getWithRefresh<ChatType>(getChatTypeKey(platform, appid, userId))
 }
 
 export interface Msg {
