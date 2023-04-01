@@ -63,7 +63,7 @@ export class WeWork implements Platform<'wework', RecvPlainData> {
   async handleRequest(
     handleRecvData: HandleRecvData<RecvPlainData>,
     genTimeoutResponse: () => Promise<MyResponse> | MyResponse = () =>
-      genMyResponse(this.genSendTextXmlMsg('正在处理中'))
+      genMyResponse(this.genRespTextXmlMsg('正在处理中'))
   ) {
     // 期望微信最多等 15 秒
     const timeoutPromise = (async () => {
@@ -172,7 +172,7 @@ export class WeWork implements Platform<'wework', RecvPlainData> {
     return handleRecvData(recvPlainData)
   }
 
-  genSendTextXmlMsg(content: string, options = { timestamp: Math.floor(Date.now() / 1000) }) {
+  genRespTextXmlMsg(content: string, options = { timestamp: Math.floor(Date.now() / 1000) }) {
     const { FromUserName, ToUserName, AgentID } = this.ctx.recvData
 
     const msg = `<xml>
@@ -187,7 +187,7 @@ export class WeWork implements Platform<'wework', RecvPlainData> {
     return msg
   }
 
-  async genSendEncryptXmlMsg(xmlMsg: string) {
-    return this.commonUtil.genSendEncryptXmlMsg(xmlMsg, this.ctx.appid, this.ctx.token)
+  async genRespEncryptXmlMsg(xmlMsg: string) {
+    return this.commonUtil.genRespEncryptXmlMsg(xmlMsg, this.ctx.appid, this.ctx.token)
   }
 }

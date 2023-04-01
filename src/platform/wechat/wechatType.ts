@@ -34,7 +34,7 @@ export const getRecvTextMsgValidator = () =>
   })
 
 export type RecvTextMsg = z.infer<ReturnType<typeof getRecvTextMsgValidator>>
-export type SendTextMsg = Omit<RecvTextMsg, 'MsgId' | 'MsgDataId' | 'Idx'>
+export type RespTextMsg = Omit<RecvTextMsg, 'MsgId' | 'MsgDataId' | 'Idx'>
 
 export const getRecvImgMsgValidator = () =>
   recvBaseMsgValidator.extend({
@@ -44,7 +44,7 @@ export const getRecvImgMsgValidator = () =>
   })
 
 export type RecvImgMsg = z.infer<ReturnType<typeof getRecvImgMsgValidator>>
-export type SendImgMsg = Omit<
+export type RespImgMsg = Omit<
   RecvImgMsg,
   'MsgId' | 'MsgDataId' | 'Idx' | 'PicUrl' | 'MediaId'
 > & {
@@ -60,7 +60,7 @@ export const getRecvVoiceMsgValidator = () =>
   })
 
 export type RecvVoiceMsg = z.infer<ReturnType<typeof getRecvVoiceMsgValidator>>
-export type SendVoiceMsg = Omit<
+export type RespVoiceMsg = Omit<
   RecvVoiceMsg,
   'MsgId' | 'MsgDataId' | 'Idx' | 'Format' | 'Recognition' | 'MediaId'
 > & {
@@ -76,7 +76,7 @@ export const getRecvVideoMsgValidator = () =>
   })
 
 export type RecvVideoMsg = z.infer<ReturnType<typeof getRecvVideoMsgValidator>>
-export type SendVideoMsg = Omit<
+export type RespVideoMsg = Omit<
   RecvVideoMsg,
   'MsgId' | 'MsgDataId' | 'Idx' | 'Format' | 'ThumbMediaId' | 'MediaId'
 > & {
@@ -136,7 +136,7 @@ export type RecvPlainMsg =
   | RecvLocationMsg
   | RecvLinkMsg
 
-export type SendMusicMsg = Omit<RecvBaseMsg, 'MsgId' | 'MsgDataId' | 'Idx'> & {
+export type RespMusicMsg = Omit<RecvBaseMsg, 'MsgId' | 'MsgDataId' | 'Idx'> & {
   MsgType: 'music'
   Music: {
     Title?: string // 音乐标题
@@ -147,7 +147,7 @@ export type SendMusicMsg = Omit<RecvBaseMsg, 'MsgId' | 'MsgDataId' | 'Idx'> & {
   }[]
 }
 
-export type SendNewsMsg = Omit<RecvBaseMsg, 'MsgId' | 'MsgDataId' | 'Idx'> & {
+export type RespNewsMsg = Omit<RecvBaseMsg, 'MsgId' | 'MsgDataId' | 'Idx'> & {
   MsgType: 'news'
   ArticleCount: number // 图文消息个数；当用户发送文本、图片、语音、视频、图文、地理位置这六种消息时，开发者只能回复1条图文消息；其余场景最多可回复8条图文消息
   Articles: {
@@ -161,13 +161,13 @@ export type SendNewsMsg = Omit<RecvBaseMsg, 'MsgId' | 'MsgDataId' | 'Idx'> & {
   }
 }
 
-export type SendPlainMsg =
-  | SendTextMsg
-  | SendImgMsg
-  | SendVoiceMsg
-  | SendVideoMsg
-  | SendMusicMsg
-  | SendNewsMsg
+export type RespPlainMsg =
+  | RespTextMsg
+  | RespImgMsg
+  | RespVoiceMsg
+  | RespVideoMsg
+  | RespMusicMsg
+  | RespNewsMsg
 
 /* ----------------- 消息 ----------------------------------- */
 

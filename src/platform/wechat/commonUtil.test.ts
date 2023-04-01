@@ -104,7 +104,7 @@ describe('src/platform/wechat.ts', () => {
 <Content><![CDATA[${recvPlainMsg.Content}]]></Content>
 </xml>`
 
-    const msgRes = await commonUtil.genSendEncryptXmlMsg(textXmlMsg, expectAppid, token)
+    const msgRes = await commonUtil.genRespEncryptXmlMsg(textXmlMsg, expectAppid, token)
     if (!msgRes.success) {
       throw new Error(`generate wechat encrypt xml text msg fail ${msgRes.msg}`)
     }

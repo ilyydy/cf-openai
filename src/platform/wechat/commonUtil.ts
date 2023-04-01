@@ -274,7 +274,7 @@ export class CommonUtil {
    * 生成加密的 xml 返回
    * @param xmlMsg 明文的 xml 返回
    */
-  async genSendEncryptXmlMsg(
+  async genRespEncryptXmlMsg(
     xmlMsg: string,
     appid: string,
     token: string,

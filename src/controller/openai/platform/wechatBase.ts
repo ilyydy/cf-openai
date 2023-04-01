@@ -53,7 +53,7 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
     typeof promise !== 'string' && this.request.ctx.waitUntil(promise)
     const plainXmlMsg = await promise
     if (this.platform.ctx.isEncrypt) {
-      const genRes = await this.platform.genSendEncryptXmlMsg(plainXmlMsg)
+      const genRes = await this.platform.genRespEncryptXmlMsg(plainXmlMsg)
       this.logger.debug(`${MODULE} 加密回复 ${JSON.stringify(genRes)}`)
       return genRes.success ? genMyResponse(genRes.data) : genMyResponse('服务异常')
     }
@@ -67,36 +67,36 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
    */
   async _handleRecvMsg(recvMsg: wechatType.RecvPlainMsg | weworkType.RecvPlainMsg) {
     if (recvMsg.MsgType !== 'text') {
-      return this.platform.genSendTextXmlMsg('只支持文字消息')
+      return this.platform.genRespTextXmlMsg('只支持文字消息')
     }
     recvMsg.Content = recvMsg.Content.trim()
     const recvMsgTokenCount = estimateTokenCount(recvMsg.Content)
     if (recvMsgTokenCount >= CONFIG.MAX_CHAT_TOKEN_NUM) {
-      return this.platform.genSendTextXmlMsg('输入太长，不能多于约 2000 个汉字')
+      return this.platform.genRespTextXmlMsg('输入太长，不能多于约 2000 个汉字')
     }
 
     const initErr = await this.initCtx()
     if (initErr) {
-      return this.platform.genSendTextXmlMsg(initErr)
+      return this.platform.genRespTextXmlMsg(initErr)
     }
     this.resetLogger()
 
     if (GLOBAL_CONFIG.ECHO_MODE) {
-      return this.platform.genSendTextXmlMsg(recvMsg.Content)
+      return this.platform.genRespTextXmlMsg(recvMsg.Content)
     }
 
     const cmdRes = await this.handleCommandMessage(recvMsg.Content)
     if (cmdRes !== null) {
-      return cmdRes.success ? this.platform.genSendTextXmlMsg(cmdRes.data) : this.platform.genSendTextXmlMsg(cmdRes.msg)
+      return cmdRes.success ? this.platform.genRespTextXmlMsg(cmdRes.data) : this.platform.genRespTextXmlMsg(cmdRes.msg)
     }
 
     this.ctx.isRequestOpenAi = true
     if (!this.ctx.apiKey) {
-      return this.platform.genSendTextXmlMsg(`未绑定 OpenAI api key，请先使用 ${commandName.bindKey} 命令进行绑定`)
+      return this.platform.genRespTextXmlMsg(`未绑定 OpenAI api key，请先使用 ${commandName.bindKey} 命令进行绑定`)
     }
 
     const respMsg = await this.openAiHandle(recvMsg.Content, recvMsg.MsgId, recvMsgTokenCount)
-    return this.platform.genSendTextXmlMsg(respMsg)
+    return this.platform.genRespTextXmlMsg(respMsg)
   }
 
   /**
@@ -104,16 +104,16 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
    */
   _handleRecvEvent(recvPlainEvent: wechatType.RecvPlainEvent | weworkType.RecvPlainEvent) {
     if (recvPlainEvent.Event === 'subscribe') {
-      return this.platform.genSendTextXmlMsg(CONFIG.WELCOME_MESSAGE)
+      return this.platform.genRespTextXmlMsg(CONFIG.WELCOME_MESSAGE)
     }
 
-    return this.platform.genSendTextXmlMsg('success')
+    return this.platform.genRespTextXmlMsg('success')
   }
 
   private async genWeChatTextXmlResponse(xmlMsg: string) {
-    const msg = this.platform.genSendTextXmlMsg(xmlMsg)
+    const msg = this.platform.genRespTextXmlMsg(xmlMsg)
     if (this.platform.ctx.isEncrypt) {
-      const encryptRes = await this.platform.genSendEncryptXmlMsg(msg)
+      const encryptRes = await this.platform.genRespEncryptXmlMsg(msg)
       if (!encryptRes.success) {
         return genMyResponse('success')
       }

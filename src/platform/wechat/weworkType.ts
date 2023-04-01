@@ -35,7 +35,7 @@ export const getRecvTextMsgValidator = () =>
   })
 
 export type RecvTextMsg = z.infer<ReturnType<typeof getRecvTextMsgValidator>>
-export type SendTextMsg = Omit<RecvTextMsg, 'MsgId' | 'AgentID'>
+export type RespTextMsg = Omit<RecvTextMsg, 'MsgId' | 'AgentID'>
 
 export const getRecvImgMsgValidator = () =>
   recvBaseMsgValidator.extend({
@@ -45,7 +45,7 @@ export const getRecvImgMsgValidator = () =>
   })
 
 export type RecvImgMsg = z.infer<ReturnType<typeof getRecvImgMsgValidator>>
-export type SendImgMsg = Omit<
+export type RespImgMsg = Omit<
   RecvImgMsg,
   'MsgId' | 'AgentID' | 'PicUrl' | 'MediaId'
 > & {
@@ -61,7 +61,7 @@ export const getRecvVoiceMsgValidator = () =>
   })
 
 export type RecvVoiceMsg = z.infer<ReturnType<typeof getRecvVoiceMsgValidator>>
-export type SendVoiceMsg = Omit<
+export type RespVoiceMsg = Omit<
   RecvVoiceMsg,
   'MsgId' | 'AgentID' | 'Format' | 'Recognition' | 'MediaId'
 > & {
@@ -76,7 +76,7 @@ export const getRecvVideoMsgValidator = () =>
   })
 
 export type RecvVideoMsg = z.infer<ReturnType<typeof getRecvVideoMsgValidator>>
-export type SendVideoMsg = Omit<
+export type RespVideoMsg = Omit<
   RecvVideoMsg,
   'MsgId' | 'AgentID' | 'ThumbMediaId' | 'MediaId'
 > & {
@@ -125,7 +125,7 @@ export type RecvPlainMsg =
   | RecvLocationMsg
   | RecvLinkMsg
 
-export type SendNewsMsg = Omit<RecvBaseMsg, 'MsgId' | 'AgentID'> & {
+export type RespNewsMsg = Omit<RecvBaseMsg, 'MsgId' | 'AgentID'> & {
   MsgType: 'news'
   ArticleCount: number // 图文消息个数
   Articles: {
@@ -138,12 +138,12 @@ export type SendNewsMsg = Omit<RecvBaseMsg, 'MsgId' | 'AgentID'> & {
   }
 }
 
-export type SendPlainMsg =
-  | SendTextMsg
-  | SendImgMsg
-  | SendVoiceMsg
-  | SendVideoMsg
-  | SendNewsMsg
+export type RespPlainMsg =
+  | RespTextMsg
+  | RespImgMsg
+  | RespVoiceMsg
+  | RespVideoMsg
+  | RespNewsMsg
 
 /* ----------------- 消息 ----------------------------------- */
 
@@ -234,7 +234,7 @@ export interface QueryVerify extends Query {
  * touser、toparty、totag不能同时为空
  */
 
-export interface PushBaseMsg {
+export interface SendBaseMsg {
   // 指定接收消息的成员，成员ID列表（多个接收者用‘|’分隔，最多支持1000个）。特殊情况：指定为"@all"，则向该企业应用的全部成员发送
   touser?: string
   // 指定接收消息的部门，部门ID列表，多个接收者用‘|’分隔，最多支持100个。当touser为"@all"时忽略本参数
@@ -248,7 +248,7 @@ export interface PushBaseMsg {
   duplicate_check_interval?: number // 表示是否重复消息检查的时间间隔，默认1800s，最大不超过4小时
 }
 
-export interface PushTextMsg extends PushBaseMsg {
+export interface SendTextMsg extends SendBaseMsg {
   msgtype: 'text'
   agentid: number // 企业应用的id，整型
   text: {
@@ -256,14 +256,14 @@ export interface PushTextMsg extends PushBaseMsg {
   } // 消息内容，最长不超过2048个字节，超过将截断（支持id转译）
 }
 
-export interface PushImgMsg extends PushBaseMsg {
+export interface SendImgMsg extends SendBaseMsg {
   msgtype: 'image'
   image: { media_id: string } // 图片媒体文件id，可以调用上传临时素材接口获取
 }
 
-export type PushMsg = PushTextMsg | PushImgMsg
+export type SendMsg = SendTextMsg | SendImgMsg
 
-export interface PushResponse {
+export interface SendResponse {
   errcode: number // 0 成功  -1 系统繁忙 其他异常
   errmsg: string
   invaliduser: string
