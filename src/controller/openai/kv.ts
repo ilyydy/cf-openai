@@ -1,4 +1,5 @@
 import { CONST } from '../../global'
+import { CONFIG } from '../openai/config'
 import { set, get, del, setWithStringify, getWithRefresh, setWithExpireMetaData } from '../../kv'
 
 import type openai from 'openai'
@@ -214,7 +215,7 @@ export async function setPrompt(
   msgId: string
 ) {
   return setWithStringify(getPromptKey(platform, appid, userId, msgId), 1, {
-    expirationTtl: TIME.ONE_MIN,
+    expirationTtl: CONFIG.ANSWER_EXPIRES_MINUTES * TIME.ONE_MIN,
   })
 }
 
@@ -242,11 +243,9 @@ export async function setAnswer(
   userId: string,
   msg: { msgId: string, content: string }
 ) {
-  return set(
-    getAnswerKey(platform, appid, userId, msg.msgId),
-    msg.content,
-    { expirationTtl: TIME.ONE_MIN }
-  )
+  return set(getAnswerKey(platform, appid, userId, msg.msgId), msg.content, {
+    expirationTtl: CONFIG.ANSWER_EXPIRES_MINUTES * TIME.ONE_MIN,
+  })
 }
 
 export async function getAnswer(

@@ -131,6 +131,7 @@
 | MAX_CHAT_TOKEN_NUM          | 4000                                                                                                                                      | 单次请求 OpenAI 最大 token 数                               |
 | MIN_CHAT_RESPONSE_TOKEN_NUM | 500                                                                                                                                       | OpenAI 回复的最小 token 数                                  |
 | MAX_HISTORY_LENGTH          | 20                                                                                                                                        | 串聊最大历史记录长度                                        |
+| ANSWER_EXPIRES_MINUTES      | 3                                                                                                                                         | 提问/回答的保存时长，分钟                                         |
 | SYSTEM_INIT_MESSAGE         | You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023 | 发给 OpenAI 的默认第一条系统消息，可用于调整模型            |
 | WELCOME_MESSAGE             | 欢迎使用，可输入 /help 查看当前可用命令                                                                                                   | 用户关注应用时发出的欢迎信息                                |
 
