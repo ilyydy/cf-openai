@@ -541,8 +541,12 @@ export abstract class Base<T extends Platform<PlatformType>> {
   }
 
   protected async getUsage(params: any) {
-    const startDate = new Date(new Date().setDate(1)).toISOString().slice(0, 10)
-    const endDate = new Date().toISOString().slice(0, 10)
+    const now = new Date()
+    const startDate = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-01`
+    const year = now.getUTCMonth() === 11 ? now.getUTCFullYear() + 1 : now.getUTCFullYear()
+    const month = now.getUTCMonth() === 11 ? '01' : `${now.getUTCMonth() + 2}`
+    const endDate = `${year}-${month.padStart(2, '0')}-01`
+
     const openAi = new OpenAiClient(this.ctx.apiKey, this.logger)
     const r = await openAi.getUsage(startDate, endDate)
     if (!r.success) {
