@@ -79,6 +79,8 @@ export interface OpenAiConfig {
   OPEN_AI_API_EXTRA_PARAMS: Record<string, any>
   // OpenAI API 请求超时毫秒
   OPEN_AI_API_TIMEOUT_MS: number
+  // OpenAI API key 使用间隔，单位秒，用于限流
+  OPEN_AI_API_KEY_OCCUPYING_DURATION: number
   // 单次请求 OpenAI 最大 token 数
   MAX_CHAT_TOKEN_NUM: number
   // OpenAI 回复的最小 token 数

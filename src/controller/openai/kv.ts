@@ -1,6 +1,7 @@
 import { CONST } from '../../global'
 import { CONFIG } from '../openai/config'
 import { set, get, del, setWithStringify, getWithRefresh, setWithExpireMetaData } from '../../kv'
+import { genSuccess } from "../../utils"
 
 import type openai from 'openai'
 import type { ChatType } from './types'
@@ -38,6 +39,28 @@ export async function getApiKey(
   userId: string
 ) {
   return getWithRefresh<string>(getApiKeyKey(platform, appid, userId))
+}
+
+function getApiKeyOccupiedKey(apiKey: string) {
+  return `openai:apiKeyOccupied:${apiKey}`
+}
+
+export async function getApiKeyWaitDuration(apiKey: string) {
+  const r = await get<string>(getApiKeyOccupiedKey(apiKey))
+  if (!r.success) {
+    return r
+  }
+
+  const durationMs = r.data ? Number.parseInt(r.data) - Date.now() : 0
+  return genSuccess(durationMs)
+}
+
+export async function setApiKeyOccupied(apiKey: string, durationMs: number) {
+  const key = getApiKeyOccupiedKey(apiKey)
+  if (durationMs <= 0) {
+    return del(key)
+  }
+  return set(key, `${durationMs}`, { expirationTtl: Math.max(durationMs / 1000, 60) })
 }
 
 export function getChatTypeKey(

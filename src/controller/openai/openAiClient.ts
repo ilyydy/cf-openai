@@ -1,5 +1,6 @@
 import { CONFIG } from './config'
-import { errorToString, genFail, genSuccess } from '../../utils'
+import { errorToString, genFail, genSuccess, sleep } from '../../utils'
+import * as kv from './kv'
 
 import type openai from 'openai'
 import type { Logger } from '../../utils'
@@ -52,6 +53,10 @@ export class OpenAiClient {
       extraPath = '',
       init = {},
     } = params
+
+    if (CONFIG.OPEN_AI_API_KEY_OCCUPYING_DURATION > 0) {
+      await this.waitToHoldApiKey(this.apiKey)
+    }
 
     const controller = new AbortController()
     const timer = setTimeout(
@@ -198,5 +203,25 @@ export class OpenAiClient {
     }
 
     return genFail(`OpenAI 返回异常\n> 数据为空`)
+  }
+
+  /**
+   * 用 kv 实现限流只能说勉强能用
+   * TODO @see https://github.com/ilyydy/cf-openai/issues/14
+   */
+  async waitToHoldApiKey(apiKey: string) {
+    const waitDurationRes = await kv.getApiKeyWaitDuration(apiKey)
+    if (!waitDurationRes.success) {
+      this.logger.error(`${MODULE} 获取 apiKey '${apiKey}' 的过期时间失败`)
+      return '服务异常'
+    }
+
+    const waitDuration = waitDurationRes.data
+    this.logger.debug(`${MODULE} apiKey '${apiKey}' waitDuration ${waitDuration}ms`)
+
+    await kv.setApiKeyOccupied(apiKey, CONFIG.OPEN_AI_API_KEY_OCCUPYING_DURATION * 1000 + waitDuration + 1000)
+    if (waitDuration > 0) {
+      await sleep(waitDuration)
+    }
   }
 }

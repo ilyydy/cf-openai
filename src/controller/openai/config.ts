@@ -38,6 +38,8 @@ export const CONFIG: OpenAiConfig = {
   OPEN_AI_API_EXTRA_PARAMS: {},
   // OpenAI API 请求超时，毫秒
   OPEN_AI_API_TIMEOUT_MS: 30000,
+  // OpenAI API key 使用间隔，单位秒，用于限流
+  OPEN_AI_API_KEY_OCCUPYING_DURATION: 0,
   // 单次请求 OpenAI 最大 token 数
   MAX_CHAT_TOKEN_NUM: 4000,
   // OpenAI 回复的最小 token 数
