@@ -8,6 +8,8 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
+const startTime = Date.now()
+
 import { handleRequest } from './router'
 import { errorToString, logger } from './utils'
 
@@ -16,7 +18,7 @@ import type { Env } from './types'
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     try {
-      const resp = await handleRequest(request, env, ctx)
+      const resp = await handleRequest(request, env, ctx, startTime)
       return resp
     } catch (error) {
       logger.error(`服务异常 ${errorToString(error as Error)}`)

@@ -115,6 +115,7 @@ export interface Env
 
 export interface MyRequest<T = string | Record<string, any> | null> {
   reqId: string
+  startTime: number
   url: string
   urlObj: URL
   method: string
