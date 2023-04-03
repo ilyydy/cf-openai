@@ -16,8 +16,7 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
   abstract initCtx(): Promise<string | undefined>
 
   async initChatType() {
-    const { platform, appid, userId } = this.platform.ctx
-    const chatTypeRes = await kv.getChatType(platform, appid, userId)
+    const chatTypeRes = await this.kvChatType().getWithExpireRefresh()
     if (!chatTypeRes.success) {
       this.logger.debug(`${MODULE} 获取聊天类型失败`)
       return '服务异常'

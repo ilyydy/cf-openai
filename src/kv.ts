@@ -5,13 +5,13 @@ const MODULE = 'src/kv.ts'
 
 const { TIME } = CONST
 
-export async function set(
+export async function set<T = string>(
   key: string,
-  value: string | ArrayBuffer | ArrayBufferView | ReadableStream<any>,
+  value: T,
   options: KVNamespacePutOptions = { expirationTtl: TIME.ONE_DAY }
 ) {
   try {
-    const v = await KV.put(key, value, options)
+    const v = await KV.put(key, value as unknown as string, options)
     return genSuccess(v)
   } catch (error) {
     logger.error(`${MODULE} kv set ${key} fail ${errorToString(error as Error)}`)
@@ -19,12 +19,28 @@ export async function set(
   }
 }
 
-export async function setWithStringify(
+export async function setWithStringify<T = any>(
   key: string,
-  value: any,
+  value: T,
   options: KVNamespacePutOptions = { expirationTtl: TIME.ONE_DAY }
 ) {
   return set(key, JSON.stringify(value), options)
+}
+
+export async function setAuto<T = any>(
+  key: string,
+  value: T,
+  options: KVNamespacePutOptions = { expirationTtl: TIME.ONE_DAY }
+) {
+  if (
+    typeof value === 'string' ||
+    value instanceof ArrayBuffer ||
+    value instanceof DataView ||
+    value instanceof ReadableStream
+  ) {
+    return set(key, value, options)
+  }
+  return setWithStringify(key, value, options)
 }
 
 export async function del(key: string) {
@@ -50,7 +66,7 @@ export async function get<T = string>(key: string, options?: Partial<KVNamespace
 export async function getWithMetadata<T, K>(key: string, options?: Partial<KVNamespaceGetOptions<any>>) {
   try {
     const { value, metadata } = await KV.getWithMetadata(key, options)
-    return genSuccess({ value, metadata } as { value: T | null; metadata: K })
+    return genSuccess({ value, metadata } as KVNamespaceGetWithMetadataResult<T, K>)
   } catch (error) {
     logger.error(`${MODULE} kv getWithMetadata ${key} fail ${errorToString(error as Error)}`)
     return genFail(`服务kv异常`)
@@ -59,44 +75,43 @@ export async function getWithMetadata<T, K>(key: string, options?: Partial<KVNam
 
 export const EXPIRE_TIME_KEY = 'expireTime'
 
-export async function setWithExpireMetaData(
+export async function setWithExpireMetaData<T = string>(
   key: string,
-  value: string | ArrayBuffer | ArrayBufferView | ReadableStream<any>,
-  options = { ttl: TIME.ONE_MONTH, expireTimeKey: EXPIRE_TIME_KEY }
+  value: T,
+  options?: { ttl?: number; expireTimeKey?: string }
 ) {
-  const metadata = { [options.expireTimeKey]: Date.now() + options.ttl * 1000 }
-  return set(key, value, { metadata, expirationTtl: options.ttl })
+  const { expireTimeKey = EXPIRE_TIME_KEY, ttl = TIME.ONE_MONTH } = options || {}
+  const metadata = { [expireTimeKey]: Date.now() + ttl * 1000 }
+  return setAuto(key, value, { metadata, expirationTtl: ttl })
 }
 
 export interface RefreshOptions {
-  expireTimeKey: string
-  threshold: number
-  ttl: number
+  expireTimeKey?: string
+  threshold?: number
+  ttl?: number
 }
 
 /**
  * get 同时根据 metadata 中的过期时间自动重新 set
  * 需要保证 metadata 用 [expireTimeKey] 作为键存储毫秒时间戳
  */
-export async function getWithRefresh<T>(
+export async function getWithExpireRefresh<T>(
   key: string,
-  options: Partial<KVNamespaceGetOptions<any>> & RefreshOptions = {
-    expireTimeKey: EXPIRE_TIME_KEY,
-    threshold: TIME.ONE_DAY,
-    ttl: TIME.ONE_MONTH,
-  }
+  options?: Partial<KVNamespaceGetOptions<any>> & RefreshOptions
 ) {
+  const { expireTimeKey = EXPIRE_TIME_KEY, threshold = TIME.ONE_DAY, ttl = TIME.ONE_MONTH } = options || {}
+
   try {
     const { value, metadata } = await KV.getWithMetadata<{ [idx: string]: number }>(key, options)
-    if (!metadata || !metadata[options.expireTimeKey]) {
-      logger.info(`${MODULE} getWithRefresh key ${key} metadata ${JSON.stringify(metadata)}`)
+    if (!metadata || !metadata[expireTimeKey]) {
+      logger.error(`${MODULE} getWithRefresh key ${key} metadata ${JSON.stringify(metadata)}`)
       return genSuccess(value as T | null)
     }
 
-    if (value !== null && metadata[options.expireTimeKey] - Date.now() <= options.threshold * 1000) {
+    if (value !== null && metadata[expireTimeKey] - Date.now() <= threshold * 1000) {
       await set(key, value, {
-        expirationTtl: options.ttl,
-        metadata: { [options.expireTimeKey]: Date.now() + options.ttl * 1000 },
+        expirationTtl: ttl,
+        metadata: { [expireTimeKey]: Date.now() + ttl * 1000 },
       })
     }
 
@@ -116,10 +131,45 @@ export async function setAdmin(userId: string) {
 }
 
 export async function isAdmin(userId: string) {
-  const r = await getWithRefresh<string>(getAdminKey(userId))
+  const r = await getWithExpireRefresh<string>(getAdminKey(userId))
   if (r.success) {
     return genSuccess(!!r.data)
   }
 
   return r
+}
+
+export function createObj<Value = string, Metadata = null>(...parts: string[]) {
+  const key = parts.join(':')
+  return {
+    // prettier-ignore
+    get: (get<Value>).bind(null, key),
+    // prettier-ignore
+    getJson: (get<Value>).bind(null, key, { type: 'json' }),
+    // prettier-ignore
+    getWithMetadata: (getWithMetadata<Value, Metadata>).bind(null, key),
+    // prettier-ignore
+    set: (set<Value>).bind(null, key),
+    // prettier-ignore
+    setWithStringify: (setWithStringify<Value>).bind(null, key),
+    // prettier-ignore
+    setAuto: (setAuto<Value>).bind(null, key),
+    // prettier-ignore
+    getWithExpireRefresh: (getWithExpireRefresh<Value>).bind(null, key),
+    // prettier-ignore
+    setWithExpireMetaData: (setWithExpireMetaData<Value>).bind(null, key),
+    del: del.bind(null, key),
+  }
+}
+
+export class KeyBuilder {
+  constructor(readonly key: string) { }
+
+  child(...parts: string[]) {
+    return KeyBuilder.of(this.key, ...parts);
+  }
+
+  static of(...parts: string[]) {
+    return new KeyBuilder(parts.join(':'))
+  }
 }

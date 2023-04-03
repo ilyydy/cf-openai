@@ -1,15 +1,7 @@
-import {
-  genFail,
-  genSuccess,
-  buildLogger,
-  errorToString,
-  Result,
-  mergeFromEnv,
-} from '../../../utils'
+import { genFail, genSuccess, buildLogger, errorToString, Result, mergeFromEnv } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG, commandName } from '../config'
 import { OpenAiClient } from '../openAiClient'
-import * as kv from '../kv'
 import * as globalKV from '../../../kv'
 import { estimateTokenCount, getApiKeyWithMask, getTextWithMask } from '../utils'
 import { platformMap } from '../../../platform'
@@ -18,7 +10,7 @@ import type openai from 'openai'
 import type { Role } from '../../../global'
 import type { MyRequest, MyResponse } from '../../../types'
 import type { Platform, PlatformType } from '../../../platform/types'
-import type { ChatType } from '../types'
+import type { ChatType, ChatMsg, HistoryMsg } from '../types'
 import type { Logger } from '../../../utils'
 
 const MODULE = 'src/openai/platform/base.ts'
@@ -75,13 +67,10 @@ export abstract class Base<T extends Platform<PlatformType>> {
    * 调用 OpenAI chat 接口
    */
   async openAiChat(openai: OpenAiClient, msgContent: string, msgId: string, msgTokenCount: number) {
-    const { platform, userId, appid } = this.platform.ctx
-
-    // 根据 msgId 看是否收到过
-    const [promptRes, answerRes] = await Promise.all([
-      kv.getPrompt(platform, appid, userId, msgId),
-      kv.getAnswer(platform, appid, userId, msgId),
-    ])
+    // 根据 msgId 看是否收到过，一般是平台发起的重试
+    const kvPrompt = this.kvPrompt(msgId)
+    const kvAnswer = this.kvAnswer(msgId)
+    const [promptRes, answerRes] = await Promise.all([kvPrompt.get(), kvAnswer.get()])
     if (!promptRes.success || !answerRes.success) {
       this.logger.info(`${MODULE} ${msgId} 获取聊天记录失败 ${promptRes.msg} ${answerRes.msg}`)
       return `获取聊天记录失败 ${promptRes.msg} ${answerRes.msg}`
@@ -96,7 +85,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
       return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
     }
 
-    await kv.setPrompt(platform, appid, userId, msgId)
+    await kvPrompt.set(msgContent)
 
     if (this.ctx.chatType === '单聊') {
       const r = await openai.createChatCompletion([
@@ -117,19 +106,16 @@ export abstract class Base<T extends Platform<PlatformType>> {
       if (r.data.finishReason !== 'stop') {
         responseMsgContent = `${responseMsgContent}\n(因${finishReasonZh}未返回完全)`
       }
-      this.request.ctx.waitUntil(
-        kv.setAnswer(platform, appid, userId, {
-          msgId,
-          content: responseMsgContent,
-        })
-      )
+      this.request.ctx.waitUntil(kvAnswer.set(responseMsgContent))
       return responseMsgContent
     }
 
     // 获取最后一次串聊输入输出
+    const kvLastChatPrompt = this.kvLastChatPrompt()
+    const kvLastChatAnswer = this.kvLastChatAnswer()
     const [lastChatPromptRes, lastChatAnswerRes] = await Promise.all([
-      kv.getLastChatPrompt(platform, appid, userId),
-      kv.getLastChatAnswer(platform, appid, userId),
+      kvLastChatPrompt.getJson(),
+      kvLastChatAnswer.getJson(),
     ])
     if (!lastChatPromptRes.success || !lastChatAnswerRes.success) {
       this.logger.info(`${MODULE} 获取聊天记录失败 ${lastChatPromptRes.msg} ${lastChatAnswerRes.msg}`)
@@ -163,16 +149,17 @@ export abstract class Base<T extends Platform<PlatformType>> {
     this.logger.debug(`${MODULE} messages 长度 ${messages.length} newHistory 长度 ${newHistory.length}`)
 
     // 更新历史
+    const kvHistory = this.kvHistory()
     this.request.ctx.waitUntil(
       Promise.all([
-        kv.setLastChatPrompt(platform, appid, userId, {
+        kvLastChatPrompt.setWithStringify({
           content: msgContent,
           conversationId,
           msgId,
           tokenNum: msgTokenCount,
         }),
-        kv.delLastChatAnswer(platform, appid, userId),
-        kv.setHistory(platform, appid, userId, this.request.reqId, newHistory),
+        kvLastChatAnswer.del(),
+        kvHistory.setWithStringify(newHistory),
       ])
     )
 
@@ -198,16 +185,15 @@ export abstract class Base<T extends Platform<PlatformType>> {
   async buildChatMessages(params: {
     msgContent: string
     msgTokenCount: number
-    lastChatPrompt: kv.Msg | null
-    lastChatAnswer: kv.Msg | null
+    lastChatPrompt: ChatMsg | null
+    lastChatAnswer: ChatMsg | null
   }) {
-    const { platform, appid, userId } = this.platform.ctx
     const { msgTokenCount: recvMsgTokenCount, lastChatAnswer, lastChatPrompt, msgContent } = params
 
     const initMsg = CONFIG.SYSTEM_INIT_MESSAGE
     const initMsgTokenCount = estimateTokenCount(initMsg)
 
-    const newHistory: kv.HistoryMsg[] = [
+    const newHistory: HistoryMsg[] = [
       {
         role: 'user',
         content: msgContent,
@@ -246,7 +232,8 @@ export abstract class Base<T extends Platform<PlatformType>> {
     this.logger.debug(`${MODULE} tokenNumForHistory ${tokenNumForHistory}`)
 
     // 获取历史
-    const historyRes = await kv.getHistory(platform, appid, userId, lastChatPrompt.conversationId)
+    const kvHistory = this.kvHistory()
+    const historyRes = await kvHistory.getJson()
     if (!historyRes.success) {
       this.logger.debug(`${MODULE} 获取历史失败 ${historyRes.msg}`)
       return genFail('获取聊天记录失败')
@@ -255,7 +242,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     if (historyRes.data && historyRes.data.length > 0) {
       let history = historyRes.data
       // 第一个是 system 消息，必放
-      const firstSystemMsg = history.shift() as kv.HistoryMsg
+      const firstSystemMsg = history.shift() as HistoryMsg
 
       // 历史记录超出长度需要裁剪
       if (history.length > CONFIG.MAX_HISTORY_LENGTH) {
@@ -307,11 +294,10 @@ export abstract class Base<T extends Platform<PlatformType>> {
    */
   async updateHistory(
     msgId: string,
-    oldHistory: kv.HistoryMsg[],
+    oldHistory: HistoryMsg[],
     responseMsg: openai.ChatCompletionResponseMessage,
     usage: openai.CreateCompletionResponseUsage
   ) {
-    const { platform, appid, userId } = this.platform.ctx
     const { conversationId } = this.ctx
 
     // 用 token 准确值更新
@@ -323,20 +309,18 @@ export abstract class Base<T extends Platform<PlatformType>> {
     }, usage.prompt_tokens)
     // 回答放入历史
     oldHistory.push({ ...responseMsg, tokenNum: usage.completion_tokens })
-    const promiseList = [
-      kv.setHistory(platform, appid, userId, conversationId, oldHistory),
-      kv.setAnswer(platform, appid, userId, {
-        msgId,
-        content: responseMsg.content,
-      }),
-    ]
+    const kvHistory = this.kvHistory()
+    const kvAnswer = this.kvAnswer(msgId)
+    const promiseList = [kvHistory.setWithStringify(oldHistory), kvAnswer.set(responseMsg.content)]
 
-    const lastChatPromptRes = await kv.getLastChatPrompt(platform, appid, userId)
+    const kvLastChatPrompt = this.kvLastChatPrompt()
+    const kvLastChatAnswer = this.kvLastChatAnswer()
+    const lastChatPromptRes = await kvLastChatPrompt.getJson()
     if (lastChatPromptRes.success) {
       // kv 存的还是这次提问，没有被其他提问覆盖
       if (lastChatPromptRes.data?.msgId === msgId) {
         promiseList.push(
-          kv.setLastChatAnswer(platform, appid, userId, {
+          kvLastChatAnswer.setWithStringify({
             content: responseMsg.content,
             conversationId,
             msgId,
@@ -358,6 +342,34 @@ export abstract class Base<T extends Platform<PlatformType>> {
     const r = await globalKV.isAdmin(this.platform.ctx.userId)
     if (r.success && r.data) return true
     return false
+  }
+
+  protected kvUserDimensionKey = (part: string) =>
+    globalKV.KeyBuilder.of('openai', part, this.platform.ctx.platform, this.platform.id, this.platform.ctx.userId)
+
+  protected kvUserDimension = <T = string>(part: string) => globalKV.createObj<T>(this.kvUserDimensionKey(part).key)
+  protected kvApiKey = () => this.kvUserDimension('apiKey')
+  protected kvChatType = () => this.kvUserDimension<ChatType>('chatType')
+  protected kvLastChatPrompt = () => this.kvUserDimension<ChatMsg>('lastChatPrompt')
+  protected kvLastChatAnswer = () => this.kvUserDimension<ChatMsg>('lastChatAnswer')
+  protected kvHistory = () => globalKV.createObj<HistoryMsg[]>(this.kvUserDimensionKey('history').child(this.ctx.conversationId).key)
+  protected kvPrompt = (msgId: string) => {
+    const obj = globalKV.createObj(this.kvUserDimensionKey('prompt').child(msgId).key)
+
+    return {
+      set: (content: string) => obj.set(content, { expirationTtl: CONFIG.ANSWER_EXPIRES_MINUTES * CONST.TIME.ONE_MIN }),
+      get: obj.get,
+      del: obj.del,
+    }
+  }
+  protected kvAnswer = (msgId: string) => {
+    const obj = globalKV.createObj(this.kvUserDimensionKey('answer').child(msgId).key)
+
+    return {
+      set: (content: string) => obj.set(content, { expirationTtl: CONFIG.ANSWER_EXPIRES_MINUTES * CONST.TIME.ONE_MIN }),
+      get: obj.get,
+      del: obj.del,
+    }
   }
 
   protected commands = {
@@ -463,7 +475,6 @@ export abstract class Base<T extends Platform<PlatformType>> {
   }
 
   protected async bindKey(key: string) {
-    const { platform, userId, appid } = this.platform.ctx
     if (
       typeof key !== 'string' ||
       key.trim().length > CONFIG.OPEN_AI_API_KEY_MAX_LEN ||
@@ -471,7 +482,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     ) {
       return genFail(`绑定失败 key 格式不合法`)
     }
-    const r = await kv.setApiKey(platform, appid, userId, key.trim())
+    const r = await this.kvApiKey().setWithExpireMetaData(key.trim())
     if (!r.success) {
       return genFail(`绑定失败 ${r.msg}`)
     }
@@ -479,8 +490,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
   }
 
   protected async unbindKey(params: any) {
-    const { platform, userId, appid } = this.platform.ctx
-    const r = await kv.delApiKey(platform, appid, userId)
+    const r = await this.kvApiKey().del()
     if (!r.success) {
       return genFail(`解绑失败 ${r.msg}`)
     }
@@ -496,17 +506,21 @@ export abstract class Base<T extends Platform<PlatformType>> {
     return genSuccess('测试成功')
   }
 
-  protected setChatType(params: string) {
+  protected async setChatType(params: string) {
     if (params !== '单聊' && params !== '串聊') {
       return genFail(`输入不合法，应输入'单聊'或'串聊'，请重新输入`)
+    }
+
+    const r = await this.kvChatType().setWithExpireMetaData(params)
+    if (!r.success) {
+      return genFail(`切换失败 ${r.msg}`)
     }
 
     return genSuccess(`切换为'${params}'成功`)
   }
 
   protected async createNewChat(params: any) {
-    const { platform, userId, appid } = this.platform.ctx
-    const r = await kv.delLastChatPrompt(platform, appid, userId)
+    const r = await this.kvLastChatPrompt().del()
     if (!r.success) {
       return genFail(`建立新串聊失败 ${r.msg}`)
     }
@@ -515,16 +529,13 @@ export abstract class Base<T extends Platform<PlatformType>> {
   }
 
   protected async retry(msgId: string) {
-    const { platform, userId, appid } = this.platform.ctx
-
     if (!msgId || !msgId.trim()) {
       return genFail('msgId 为空')
     }
 
-    const [promptRes, answerRes] = await Promise.all([
-      kv.getPrompt(platform, appid, userId, msgId),
-      kv.getAnswer(platform, appid, userId, msgId),
-    ])
+    const kvPrompt = this.kvPrompt(msgId)
+    const kvAnswer = this.kvAnswer(msgId)
+    const [promptRes, answerRes] = await Promise.all([kvPrompt.get(), kvAnswer.get()])
     if (!promptRes.success || !answerRes.success) {
       return genFail(`获取聊天记录失败 ${promptRes.msg} ${answerRes.msg}`)
     }

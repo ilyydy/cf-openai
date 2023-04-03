@@ -1,12 +1,12 @@
 import { genFail, genSuccess, genMyResponse } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG as OPENAI_CONFIG } from '../config'
-import * as kv from '../kv'
-import { estimateTokenCount } from '../utils'
 import { CONFIG as WE_CHAT_CONFIG } from '../../../platform/wechat/wechat'
 import { WeChatBaseHandler } from './wechatBase'
+import * as globalKV from '../../../kv'
 
 import type { WeChat } from '../../../platform/wechat/wechat'
+import type { ChatType, ChatMsg, HistoryMsg } from '../types'
 
 const MODULE = 'src/openai/platform/wechat.ts'
 
@@ -15,7 +15,7 @@ export class WeChatHandler extends WeChatBaseHandler<WeChat> {
     const { platform, appid, userId } = this.platform.ctx
     const { role } = this.ctx
 
-    const apiKeyRes = await kv.getApiKey(platform, appid, userId)
+    const apiKeyRes = await this.kvApiKey().getWithExpireRefresh()
     if (!apiKeyRes.success) {
       this.logger.debug(`${MODULE} 获取 api key 失败`)
       return '服务异常'
@@ -54,4 +54,15 @@ export class WeChatHandler extends WeChatBaseHandler<WeChat> {
 
     return this.initChatType()
   }
+
+  // key 里 appid 应该用 id，id 通过 url 确保每个平台下唯一
+  // 微信因为历史原因用了 appid，id 和 appid 一一映射应该没有问题
+  protected override kvUserDimensionKey = (part: string) =>
+    globalKV.KeyBuilder.of(
+      'openai',
+      part,
+      this.platform.ctx.platform,
+      this.platform.ctx.appid,
+      this.platform.ctx.userId
+    )
 }
