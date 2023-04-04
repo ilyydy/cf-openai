@@ -41,9 +41,7 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
       }
 
       const msg =
-        !this.ctx.isRequestOpenAi || 'Event' in recvData
-          ? '服务异常，请稍后重试'
-          : `正在处理中，请稍后用\n${commandName.retry} ${recvData.MsgId}\n命令获取回答`
+        !this.ctx.isRequestOpenAi || 'Event' in recvData ? '服务异常，请稍后重试' : this.getRetryMessage(recvData.MsgId)
       this.logger.debug(`${MODULE} 超时兜底回复 ${msg}`)
       return this.genWeChatTextXmlResponse(msg)
     })
@@ -140,8 +138,10 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
       // 第 2 次请求 openAi 的让平台超时重试
       if (this.platformTryTimes === 2) {
         await sleep(2000)
+      } else {
+        this.request.ctx.waitUntil(this.kvLastDelayPrompt().set(msgId))
       }
-      return this.platform.genRespTextXmlMsg(`正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`)
+      return this.platform.genRespTextXmlMsg(this.getRetryMessage(msgId))
     }
 
     this.request.ctx.waitUntil(kvMsgTryTimes.setWithStringify(1))
@@ -160,7 +160,8 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
     return this.platform.genRespTextXmlMsg('success')
   }
 
-  protected kvMsgTryTimes = (msgId: string) => globalKV.createObj<number>(this.kvUserDimensionKey('tryTimes').child(msgId).key)
+  protected kvMsgTryTimes = (msgId: string) =>
+    globalKV.createObj<number>(this.kvUserDimensionKey('tryTimes').child(msgId).key)
 
   private async genWeChatTextXmlResponse(xmlMsg: string) {
     const msg = this.platform.genRespTextXmlMsg(xmlMsg)

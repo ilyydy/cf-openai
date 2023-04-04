@@ -70,6 +70,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     // 根据 msgId 看是否收到过，一般是平台发起的重试
     const kvPrompt = this.kvPrompt(msgId)
     await kvPrompt.set(msgContent)
+    const kvAnswer = this.kvAnswer(msgId)
 
     if (this.ctx.chatType === '单聊') {
       const r = await openai.createChatCompletion([
@@ -83,6 +84,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
         },
       ])
       if (!r.success) {
+        this.request.ctx.waitUntil(kvAnswer.set(r.msg))
         return r.msg
       }
       const { msg: respMsg, finishReasonZh, usage } = r.data
@@ -90,7 +92,6 @@ export abstract class Base<T extends Platform<PlatformType>> {
       if (r.data.finishReason !== 'stop') {
         responseMsgContent = `${responseMsgContent}\n(因${finishReasonZh}未返回完全)`
       }
-      const kvAnswer = this.kvAnswer(msgId)
       this.request.ctx.waitUntil(kvAnswer.set(responseMsgContent))
       return responseMsgContent
     }
@@ -139,6 +140,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
 
     const r = await openai.createChatCompletion(messages)
     if (!r.success) {
+      this.request.ctx.waitUntil(kvAnswer.set(r.msg))
       return r.msg
     }
     const { msg: respMsg, finishReasonZh, usage } = r.data
@@ -399,6 +401,16 @@ export abstract class Base<T extends Platform<PlatformType>> {
       roles: [CONST.ROLE.USER, CONST.ROLE.FREE_TRIAL],
       fn: this.retry.bind(this),
     },
+    [commandName.retryLastMessage]: {
+      description: '重试上一个延迟的回答',
+      roles: [CONST.ROLE.USER, CONST.ROLE.FREE_TRIAL],
+      fn: this.retryLastMessage.bind(this),
+    },
+    [commandName.retryLastMessage2]: {
+      description: '重试上一个延迟的回答',
+      roles: [CONST.ROLE.USER, CONST.ROLE.FREE_TRIAL],
+      fn: this.retryLastMessage.bind(this),
+    },
     [commandName.bindSessionKey]: {
       description:
         '绑定 OpenAI session key，可查看用量页面对 https://api.openai.com/dashboard/billing/credit_grants 的请求头获得',
@@ -545,10 +557,23 @@ export abstract class Base<T extends Platform<PlatformType>> {
         return genSuccess(answerRes.data)
       }
       // 否则提示用户稍等重试
-      return genSuccess(`正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`)
+      return genSuccess(this.getRetryMessage(msgId))
     }
 
     return genSuccess('该 msgId 无记录，可能已过期')
+  }
+
+  protected async retryLastMessage(params: any) {
+    const res = await this.kvLastDelayPrompt().get()
+    if (!res.success) {
+      return genFail('获取记录失败')
+    }
+    const msgId = res.data
+    if (!msgId) {
+      return genSuccess('无最后一次延迟记录')
+    }
+    this.logger.debug(`${MODULE} 最后一次延迟记录 ${msgId}`)
+    return this.retry(msgId)
   }
 
   protected async bindSessionKey(key: string) {
@@ -685,6 +710,10 @@ export abstract class Base<T extends Platform<PlatformType>> {
     }
 
     return null
+  }
+
+  protected getRetryMessage(msgId: string) {
+    return `正在处理中，请稍后输入 ${commandName.retryLastMessage} 或以下命令获取回答\n${commandName.retry} ${msgId}`
   }
 
   protected resetLogger() {

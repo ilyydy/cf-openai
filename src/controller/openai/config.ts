@@ -8,6 +8,8 @@ export const commandName = {
   setChatType: '/setChatType',
   newChat: '/newChat',
   retry: '/retry',
+  retryLastMessage: '..',
+  retryLastMessage2: '。。',
   usage: '/usage',
   bindSessionKey: '/bindSessionKey',
   unbindSessionKey: '/unbindSessionKey',

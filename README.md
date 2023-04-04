@@ -111,6 +111,8 @@
 | /setChatType      | 用户，试用者 | 切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量 |
 | /newChat          | 用户，试用者 | 清除之前的串聊历史记录，开始新的串聊                                                                                    |
 | /retry            | 用户，试用者 | 根据 msgId 获取对应回答，回答只会保留 3 分钟。保留时间可通过 ANSWER_EXPIRES_MINUTES 配置                                |
+| ..                | 用户，试用者 | 重试上一个延迟的回答                                                                                                    |
+| 。。              | 用户，试用者 | 重试上一个延迟的回答                                                                                                    |
 | /bindSessionKey   | 游客，用户   | 绑定 OpenAI session key，可查看用量页面对 <https://api.openai.com/v1/usage> 的请求头获得                                |
 | /unbindSessionKey | 用户         | 解绑 OpenAI session key                                                                                                 |
 | /usage            | 用户         | 获取本月用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI session key                                                  |
