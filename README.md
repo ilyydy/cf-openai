@@ -68,12 +68,12 @@
 3. 应用管理-创建应用，可以查看 AgentId 和 Secret，接收消息-设置API接收中随机生成 Token，EncodingAESKey，此时还不需要保存
 4. Worker 配置应用需要的环境变量。可以通过界面操作配置，见上面的 [Cloudflare 界面部署](#cloudflare-界面部署) 第三步。可以通过配置文件配置，见 [Github Action 部署](#github-action-部署) 第三步和 [本地命令行部署](#本地命令行部署) 第三步
 
-   | 变量名                    | 内容描述                                     | 备注                                             |
-   | ------------------------- | -------------------------------------------- | ------------------------------------------------ |
-   | WEWORK_ID_LIST            | 允许访问的应用 ID 列表，多个则以英文逗号分隔 | ID 是你自定义的，可以直接使用 AgentId            |
-   | WEWORK_${ID}_APPID        | 企业微信的 corpid                            | 将 ${ID} 替换成你自定义的 ID                     |
-   | WEWORK_${ID}_TOKEN        | 应用的 Token                                 | 将 ${ID} 替换成你自定义的 ID                     |
-   | WEWORK_${ID}_AES_KEY      | 应用的 EncodingAESKey                        | 将 ${ID} 替换成你自定义的 ID                     |
+   | 变量名                          | 内容描述                                     | 备注                                             |
+   | ------------------------------- | -------------------------------------------- | ------------------------------------------------ |
+   | WEWORK_ID_LIST                  | 允许访问的应用 ID 列表，多个则以英文逗号分隔 | ID 是你自定义的，建议由 10 位以内的数字字母组成  |
+   | WEWORK_${ID}_APPID              | 企业微信的 corpid                            | 将 ${ID} 替换成你自定义的 ID                     |
+   | WEWORK_${ID}_TOKEN              | 应用的 Token                                 | 将 ${ID} 替换成你自定义的 ID                     |
+   | WEWORK_${ID}_AES_KEY            | 应用的 EncodingAESKey                        | 将 ${ID} 替换成你自定义的 ID                     |
    | WEWORK_${ID}_ADMIN_USER_ID_LIST | admin 用户名单，多个则以英文逗号分隔         | 可以暂时先不配，等后面知道自己的用户 ID 后再配置 |
 
 5. 根据域名和自定义的 ID 得出第三步中的服务器地址(URL)并进行配置，格式为 `https://${域名}/openai/wework/${ID}`。如域名为 `xxx.com`，自定义的 ID 为 `id123`，则服务器地址(URL)为 `https://xxx.com/openai/wework/id123`。虽然提示 `为保障企业数据安全，需配置备案主体与当前企业主体相同或有关联关系的域名`，但实测发现 Cloudflare 绑定自己的域名也可以通过验证，不确定具体规则是什么
@@ -85,15 +85,15 @@
 2. 公众号管理平台-设置与开发-基本配置页面确认自己的开发者 ID(AppID)，生成令牌(Token)，消息加解密密钥(EncodingAESKey)（若开启安全模式或兼容模式才需要），此时还不需要启用服务器配置
 3. Worker 配置微信公众号需要的环境变量。可以通过界面操作配置，见上面的 [Cloudflare 界面部署](#cloudflare-界面部署) 第三步。可以通过配置文件配置，见 [Github Action 部署](#github-action-部署) 第三步和 [本地命令行部署](#本地命令行部署) 第三步
 
-   | 变量名                    | 内容描述                                       | 备注                                                         |
-   | ------------------------- | ---------------------------------------------- | ------------------------------------------------------------ |
-   | WECHAT_ID_LIST            | 允许访问的公众号 ID 列表，多个则以英文逗号分隔 | ID 是你自定义的，建议由 10 位以内的数字字母组成              |
-   | WECHAT_${ID}_APPID        | 公众号的开发者 ID(AppID)                       | 将 ${ID} 替换成你自定义的 ID                                 |
-   | WECHAT_${ID}_TOKEN        | 公众号的令牌(Token)                            | 将 ${ID} 替换成你自定义的 ID                                 |
-   | WECHAT_${ID}_AES_KEY      | 公众号的消息加解密密钥(EncodingAESKey)         | 将 ${ID} 替换成你自定义的 ID，开启安全模式或兼容模式时才需要 |
-   | WECHAT_ADMIN_USER_ID_LIST | admin 用户名单，多个则以英文逗号分隔           | 可以暂时先不配，等后面知道自己的用户 ID 后再配置             |
-   | WECHAT_ADMIN_OPENAI_KEY   | admin 用户的 OpenAI Key                        | 可选，默认会使用 `WECHAT_GUEST_OPENAI_KEY`，优先级高于 OpenAI 的配置       |
-   | WECHAT_GUEST_OPENAI_KEY   | 游客的 OpenAI Key                              | 可选，可被随意使用，优先级高于 OpenAI 的配置，谨慎配置！ |
+   | 变量名                    | 内容描述                                       | 备注                                                                 |
+   | ------------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
+   | WECHAT_ID_LIST            | 允许访问的公众号 ID 列表，多个则以英文逗号分隔 | ID 是你自定义的，建议由 10 位以内的数字字母组成                      |
+   | WECHAT_${ID}_APPID        | 公众号的开发者 ID(AppID)                       | 将 ${ID} 替换成你自定义的 ID                                         |
+   | WECHAT_${ID}_TOKEN        | 公众号的令牌(Token)                            | 将 ${ID} 替换成你自定义的 ID                                         |
+   | WECHAT_${ID}_AES_KEY      | 公众号的消息加解密密钥(EncodingAESKey)         | 将 ${ID} 替换成你自定义的 ID，开启安全模式或兼容模式时才需要         |
+   | WECHAT_ADMIN_USER_ID_LIST | admin 用户名单，多个则以英文逗号分隔           | 可以暂时先不配，等后面知道自己的用户 ID 后再配置                     |
+   | WECHAT_ADMIN_OPENAI_KEY   | admin 用户的 OpenAI Key                        | 可选，默认会使用 `WECHAT_GUEST_OPENAI_KEY`，优先级高于 OpenAI 的配置 |
+   | WECHAT_GUEST_OPENAI_KEY   | 游客的 OpenAI Key                              | 可选，可被随意使用，优先级高于 OpenAI 的配置，谨慎配置！             |
 
 4. 根据域名和自定义的 ID 得出第二步中服务器配置的服务器地址(URL)并进行配置，格式为 `https://${域名}/openai/wechat/${ID}`。如域名为 `xxx.com`，自定义的 ID 为 `id123`，则服务器地址(URL)为 `https://xxx.com/openai/wechat/id123`
 5. 消息加解密方式一般选明文，启用服务器配置，验证接入成功后即可使用
@@ -102,39 +102,41 @@
 
 输入使用时可忽略大小写
 
-| 命令         | 可用角色     | 说明                                                                                                                    |
-| ------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| /help        | 游客，用户   | 获取命令帮助信息                                                                                                        |
-| /bindKey     | 游客，用户   | 绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 /testKey 命令测试是否正常可用              |
-| /unbindKey   | 用户         | 解绑 OpenAI api key                                                                                                     |
-| /testKey     | 用户         | 调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量                                                     |
-| /setChatType | 用户         | 切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量 |
-| /newChat     | 用户         | 清除之前的串聊历史记录，开始新的串聊                                                                                    |
-| /retry       | 用户         | 根据 msgId 获取对于回答，回答只会保留 1 分钟                                                                            |
-| /usage       | 用户         | 获取本月用量信息，可能有 5 分钟左右的延迟                                                                               |
-| /freeUsage   | 用户         | 获取免费用量信息，可能有 5 分钟左右的延迟                                                                               |
-| /system      | 用户，管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                            |
-| /faq         | 游客，用户   | 一些常见问题                                                                                                            |
-| /adminAuth   | 游客，用户   | 通过 token 认证成为管理员，避免每个平台配置 admin 用户 ID 的麻烦。需要先配置 ADMIN_AUTH_TOKEN                                  |
+| 命令              | 可用角色     | 说明                                                                                                                    |
+| ----------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| /help             | 游客，用户   | 获取命令帮助信息                                                                                                        |
+| /bindKey          | 游客，用户   | 绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 /testKey 命令测试是否正常可用              |
+| /unbindKey        | 用户         | 解绑 OpenAI api key                                                                                                     |
+| /testKey          | 用户         | 调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量                                                     |
+| /setChatType      | 用户，试用者 | 切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量 |
+| /newChat          | 用户，试用者 | 清除之前的串聊历史记录，开始新的串聊                                                                                    |
+| /retry            | 用户，试用者 | 根据 msgId 获取对应回答，回答只会保留 3 分钟。保留时间可通过 ANSWER_EXPIRES_MINUTES 配置                                |
+| /bindSessionKey   | 游客，用户   | 绑定 OpenAI session key，可查看用量页面对 <https://api.openai.com/v1/usage> 的请求头获得                                |
+| /unbindSessionKey | 用户         | 解绑 OpenAI session key                                                                                                 |
+| /usage            | 用户         | 获取本月用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI session key                                                  |
+| /freeUsage        | 用户         | 获取免费用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI session key                                                  |
+| /system           | 用户，管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                            |
+| /faq              | 游客，用户   | 一些常见问题                                                                                                            |
+| /adminAuth        | 游客，用户   | 通过 token 认证成为管理员，避免每个平台配置 admin 用户 ID 的麻烦。需要先配置 ADMIN_AUTH_TOKEN                           |
 
 ## OpenAI 配置
 
-| 配置名                      | 默认值                                                                                                                                    | 说明                                                        |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| CHAT_MODEL                  | gpt-3.5-turbo                                                                                                                             | OpenAI 的模型名称                                           |
-| OPEN_AI_API_PREFIX          | <https://api.openai.com/v1>                                                                                                               | OpenAI 的通用 API 前缀                                      |
-| GUEST_KEY                   |                                                                                                                                           | 可选，游客的默认 openai key，可被随意使用，跨平台起效，谨慎配置！ |
-| ADMIN_KEY                   |                                                                                                                                           | 可选，admin 用户的默认 openai key，跨平台起效                     |
-| OPEN_AI_USAGE               | <https://api.openai.com/dashboard/billing/usage>                                                                                          | OpenAI 的用量地址                                           |
-| OPEN_AI_FREE_USAGE          | <https://api.openai.com/dashboard/billing/credit_grants>                                                                                  | OpenAI 的免费用量地址                                       |
-| OPEN_AI_API_TIMEOUT_MS      | 30000                                                                                                                                     | OpenAI API 请求超时，毫秒                                   |
+| 配置名                             | 默认值                                                                                                                                    | 说明                                                                                   |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| CHAT_MODEL                         | gpt-3.5-turbo                                                                                                                             | OpenAI 的模型名称                                                                      |
+| OPEN_AI_API_PREFIX                 | <https://api.openai.com/v1>                                                                                                               | OpenAI 的通用 API 前缀                                                                 |
+| GUEST_KEY                          |                                                                                                                                           | 可选，游客的默认 openai key，可被随意使用，跨平台起效，谨慎配置！                      |
+| ADMIN_KEY                          |                                                                                                                                           | 可选，admin 用户的默认 openai key，跨平台起效                                          |
+| OPEN_AI_USAGE                      | <https://api.openai.com/dashboard/billing/usage>                                                                                          | OpenAI 的用量地址                                                                      |
+| OPEN_AI_FREE_USAGE                 | <https://api.openai.com/dashboard/billing/credit_grants>                                                                                  | OpenAI 的免费用量地址                                                                  |
+| OPEN_AI_API_TIMEOUT_MS             | 30000                                                                                                                                     | OpenAI API 请求超时，毫秒                                                              |
 | OPEN_AI_API_KEY_OCCUPYING_DURATION | 0                                                                                                                                         | OpenAI API key 使用间隔，单位秒，用于限流，大于 0 时开启。用 kv 实现限流只能说勉强能用 |
-| MAX_CHAT_TOKEN_NUM          | 4000                                                                                                                                      | 单次请求 OpenAI 最大 token 数                               |
-| MIN_CHAT_RESPONSE_TOKEN_NUM | 500                                                                                                                                       | OpenAI 回复的最小 token 数                                  |
-| MAX_HISTORY_LENGTH          | 20                                                                                                                                        | 串聊最大历史记录长度                                        |
-| ANSWER_EXPIRES_MINUTES      | 3                                                                                                                                         | 提问/回答的保存时长，分钟                                         |
-| SYSTEM_INIT_MESSAGE         | You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023 | 发给 OpenAI 的默认第一条系统消息，可用于调整模型            |
-| WELCOME_MESSAGE             | 欢迎使用，可输入 /help 查看当前可用命令                                                                                                   | 用户关注应用时发出的欢迎信息                                |
+| MAX_CHAT_TOKEN_NUM                 | 4000                                                                                                                                      | 单次请求 OpenAI 最大 token 数                                                          |
+| MIN_CHAT_RESPONSE_TOKEN_NUM        | 500                                                                                                                                       | OpenAI 回复的最小 token 数                                                             |
+| MAX_HISTORY_LENGTH                 | 20                                                                                                                                        | 串聊最大历史记录长度                                                                   |
+| ANSWER_EXPIRES_MINUTES             | 3                                                                                                                                         | 提问/回答的保存时长，分钟                                                              |
+| SYSTEM_INIT_MESSAGE                | You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023 | 发给 OpenAI 的默认第一条系统消息，可用于调整模型                                       |
+| WELCOME_MESSAGE                    | 欢迎使用，可输入 /help 查看当前可用命令                                                                                                   | 用户关注应用时发出的欢迎信息                                                           |
 
 ## 全局配置
 

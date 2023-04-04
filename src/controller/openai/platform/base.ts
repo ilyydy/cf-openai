@@ -1,7 +1,7 @@
 import { genFail, genSuccess, buildLogger, errorToString, Result, mergeFromEnv } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG, commandName } from '../config'
-import { OpenAiClient } from '../openAiClient'
+import { OpenAiBrowserClient, OpenAiClient } from '../openAiClient'
 import * as globalKV from '../../../kv'
 import { estimateTokenCount, getApiKeyWithMask, getTextWithMask } from '../utils'
 import { platformMap } from '../../../platform'
@@ -318,15 +318,30 @@ export abstract class Base<T extends Platform<PlatformType>> {
     return false
   }
 
+  async getSessionKey() {
+    const keyRes = await this.kvSessionKey().getWithExpireRefresh()
+    if (!keyRes.success) {
+      this.logger.debug(`${MODULE} 获取 session 失败`)
+      return genFail('服务异常')
+    }
+    if (keyRes.data) {
+      return genSuccess(keyRes.data)
+    }
+    return genFail('未绑定 session key')
+  }
+
   protected kvUserDimensionKey = (part: string) =>
     globalKV.KeyBuilder.of('openai', part, this.platform.ctx.platform, this.platform.id, this.platform.ctx.userId)
 
   protected kvUserDimension = <T = string>(part: string) => globalKV.createObj<T>(this.kvUserDimensionKey(part).key)
   protected kvApiKey = () => this.kvUserDimension('apiKey')
+  protected kvSessionKey = () => this.kvUserDimension('sessionKey')
   protected kvChatType = () => this.kvUserDimension<ChatType>('chatType')
   protected kvLastChatPrompt = () => this.kvUserDimension<ChatMsg>('lastChatPrompt')
   protected kvLastChatAnswer = () => this.kvUserDimension<ChatMsg>('lastChatAnswer')
-  protected kvHistory = () => globalKV.createObj<HistoryMsg[]>(this.kvUserDimensionKey('history').child(this.ctx.conversationId).key)
+  protected kvLastDelayPrompt = () => this.kvUserDimension('lastDelayPrompt')
+  protected kvHistory = () =>
+    globalKV.createObj<HistoryMsg[]>(this.kvUserDimensionKey('history').child(this.ctx.conversationId).key)
   protected kvPrompt = (msgId: string) => {
     const obj = globalKV.createObj(this.kvUserDimensionKey('prompt').child(msgId).key)
 
@@ -384,13 +399,24 @@ export abstract class Base<T extends Platform<PlatformType>> {
       roles: [CONST.ROLE.USER, CONST.ROLE.FREE_TRIAL],
       fn: this.retry.bind(this),
     },
+    [commandName.bindSessionKey]: {
+      description:
+        '绑定 OpenAI session key，可查看用量页面对 https://api.openai.com/dashboard/billing/credit_grants 的请求头获得',
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
+      fn: this.bindSessionKey.bind(this),
+    },
+    [commandName.unbindSessionKey]: {
+      description: '解绑 OpenAI session key',
+      roles: [CONST.ROLE.USER],
+      fn: this.unbindKey.bind(this),
+    },
     [commandName.usage]: {
-      description: '获取本月用量信息，可能有 5 分钟左右的延迟',
+      description: `获取本月用量信息，可能有 5 分钟左右的延迟，需要先用命令 ${commandName.bindSessionKey} 进行绑定`,
       roles: [CONST.ROLE.USER],
       fn: this.getUsage.bind(this),
     },
     [commandName.freeUsage]: {
-      description: '获取免费用量信息，可能有 5 分钟左右的延迟',
+      description: `获取免费用量信息，可能有 5 分钟左右的延迟，需要先用命令 ${commandName.bindSessionKey} 进行绑定`,
       roles: [CONST.ROLE.USER],
       fn: this.getFreeUsage.bind(this),
     },
@@ -525,6 +551,25 @@ export abstract class Base<T extends Platform<PlatformType>> {
     return genSuccess('该 msgId 无记录，可能已过期')
   }
 
+  protected async bindSessionKey(key: string) {
+    if (typeof key !== 'string' || key.length < 40 || key.length > 60) {
+      return genFail(`绑定失败 session key 格式不合法`)
+    }
+    const r = await this.kvSessionKey().setWithExpireMetaData(key.trim())
+    if (!r.success) {
+      return genFail(`绑定失败 ${r.msg}`)
+    }
+    return genSuccess('绑定成功')
+  }
+
+  protected async unbindSessionKey(params: any) {
+    const r = await this.kvSessionKey().del()
+    if (!r.success) {
+      return genFail(`解绑失败 ${r.msg}`)
+    }
+    return genSuccess('解绑成功')
+  }
+
   protected async getUsage(params: any) {
     const now = new Date()
     const startDate = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-01`
@@ -532,7 +577,11 @@ export abstract class Base<T extends Platform<PlatformType>> {
     const month = now.getUTCMonth() === 11 ? '01' : `${now.getUTCMonth() + 2}`
     const endDate = `${year}-${month.padStart(2, '0')}-01`
 
-    const openAi = new OpenAiClient(this.ctx.apiKey, this.logger)
+    const keyRes = await this.getSessionKey()
+    if (!keyRes.success) {
+      return keyRes
+    }
+    const openAi = new OpenAiBrowserClient(keyRes.data, this.logger)
     const r = await openAi.getUsage(startDate, endDate)
     if (!r.success) {
       return genFail(`获取失败 ${r.msg}`)
@@ -542,7 +591,11 @@ export abstract class Base<T extends Platform<PlatformType>> {
   }
 
   protected async getFreeUsage(params: any) {
-    const openAi = new OpenAiClient(this.ctx.apiKey, this.logger)
+    const keyRes = await this.getSessionKey()
+    if (!keyRes.success) {
+      return keyRes
+    }
+    const openAi = new OpenAiBrowserClient(keyRes.data, this.logger)
     const r = await openAi.getFreeUsage()
     if (!r.success) {
       return genFail(`获取失败 ${r.msg}`)
@@ -551,15 +604,23 @@ export abstract class Base<T extends Platform<PlatformType>> {
     return genSuccess(msg)
   }
 
-  protected commandSystem(params: any) {
+  protected async commandSystem(params: any) {
     const { platform, userId, appid } = this.platform.ctx
     const { apiKey, conversationId, chatType, role } = this.ctx
     const isAdmin = role.has(CONST.ROLE.ADMIN)
+
+    const sessionKeyRes = await this.kvSessionKey().getWithExpireRefresh()
+    const sessionKey = sessionKeyRes.success
+      ? sessionKeyRes.data
+        ? getTextWithMask(sessionKeyRes.data)
+        : '未绑定'
+      : '获取失败'
 
     const msgList = [
       '当前系统信息如下: ',
       `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
       `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
+      `⭐OpenAI session key: ${sessionKey}`,
       `⭐OpenAI 对话模式: ${chatType}`,
       `⭐当前用户: ${isAdmin ? userId : getTextWithMask(userId)}`,
     ]

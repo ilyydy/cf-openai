@@ -9,6 +9,8 @@ export const commandName = {
   newChat: '/newChat',
   retry: '/retry',
   usage: '/usage',
+  bindSessionKey: '/bindSessionKey',
+  unbindSessionKey: '/unbindSessionKey',
   freeUsage: '/freeUsage',
   version: '/version',
   setEnv: '/setEnv',
