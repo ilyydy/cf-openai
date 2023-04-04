@@ -21,7 +21,7 @@ const MODULE = 'src/platform/wechat/wework.ts'
 
 export const CONFIG: WeWorkConfig = {
   // 处理微信请求的最大毫秒数
-  WEWORK_HANDLE_MS_TIME: 4000,
+  WEWORK_HANDLE_MS_TIME: 4500,
   // 允许访问的 id 列表
   WEWORK_ID_LIST: [],
 }
@@ -65,7 +65,6 @@ export class WeWork implements Platform<'wework', RecvPlainData> {
     genTimeoutResponse: () => Promise<MyResponse> | MyResponse = () =>
       genMyResponse(this.genRespTextXmlMsg('正在处理中'))
   ) {
-    // 期望微信最多等 15 秒
     const timeoutPromise = (async () => {
       await sleep(CONFIG.WEWORK_HANDLE_MS_TIME)
       return genTimeoutResponse()

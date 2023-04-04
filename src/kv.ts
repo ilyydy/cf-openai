@@ -11,6 +11,7 @@ export async function set<T = string>(
   options: KVNamespacePutOptions = { expirationTtl: TIME.ONE_DAY }
 ) {
   try {
+    logger.debug(`${MODULE} set ${key}`)
     const v = await KV.put(key, value as unknown as string, options)
     return genSuccess(v)
   } catch (error) {
@@ -45,6 +46,7 @@ export async function setAuto<T = any>(
 
 export async function del(key: string) {
   try {
+    logger.debug(`${MODULE} del ${key}`)
     const v = await KV.delete(key)
     return genSuccess(v)
   } catch (error) {
@@ -55,6 +57,7 @@ export async function del(key: string) {
 
 export async function get<T = string>(key: string, options?: Partial<KVNamespaceGetOptions<any>>) {
   try {
+    logger.debug(`${MODULE} get ${key}`)
     const v = await KV.get(key, options)
     return genSuccess(v as T | null)
   } catch (error) {
@@ -65,6 +68,7 @@ export async function get<T = string>(key: string, options?: Partial<KVNamespace
 
 export async function getWithMetadata<T, K>(key: string, options?: Partial<KVNamespaceGetOptions<any>>) {
   try {
+    logger.debug(`${MODULE} getWithMetadata ${key}`)
     const { value, metadata } = await KV.getWithMetadata(key, options)
     return genSuccess({ value, metadata } as KVNamespaceGetWithMetadataResult<T, K>)
   } catch (error) {
@@ -102,9 +106,10 @@ export async function getWithExpireRefresh<T>(
   const { expireTimeKey = EXPIRE_TIME_KEY, threshold = TIME.ONE_DAY, ttl = TIME.ONE_MONTH } = options || {}
 
   try {
+    logger.debug(`${MODULE} getWithExpireRefresh ${key}`)
     const { value, metadata } = await KV.getWithMetadata<{ [idx: string]: number }>(key, options)
     if (!metadata || !metadata[expireTimeKey]) {
-      logger.error(`${MODULE} getWithRefresh key ${key} metadata ${JSON.stringify(metadata)}`)
+      logger.info(`${MODULE} getWithExpireRefresh key ${key} metadata ${JSON.stringify(metadata)}`)
       return genSuccess(value as T | null)
     }
 
@@ -117,7 +122,7 @@ export async function getWithExpireRefresh<T>(
 
     return genSuccess(value as T | null)
   } catch (error) {
-    logger.error(`${MODULE} kv getWithRefresh ${key} fail ${errorToString(error as Error)}`)
+    logger.error(`${MODULE} kv getWithExpireRefresh ${key} fail ${errorToString(error as Error)}`)
     return genFail(`服务kv异常`)
   }
 }

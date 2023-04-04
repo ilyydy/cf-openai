@@ -6,7 +6,6 @@ import { WeChatBaseHandler } from './wechatBase'
 import * as globalKV from '../../../kv'
 
 import type { WeChat } from '../../../platform/wechat/wechat'
-import type { ChatType, ChatMsg, HistoryMsg } from '../types'
 
 const MODULE = 'src/openai/platform/wechat.ts'
 

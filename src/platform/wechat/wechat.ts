@@ -23,7 +23,7 @@ export const CONFIG: WeChatConfig = {
   // admin 用户名单，设置时以逗号分隔
   WECHAT_ADMIN_USER_ID_LIST: [],
   // 处理微信请求的最大毫秒数
-  WECHAT_HANDLE_MS_TIME: 13000,
+  WECHAT_HANDLE_MS_TIME: 4500,
   // 允许访问的 id 列表
   WECHAT_ID_LIST: [],
   WECHAT_ADMIN_OPENAI_KEY: '',
@@ -72,7 +72,6 @@ export class WeChat implements Platform<'wechat', RecvPlainData> {
     genTimeoutResponse: () => Promise<MyResponse> | MyResponse = () =>
       genMyResponse(this.genRespTextXmlMsg('正在处理中'))
   ) {
-    // 微信最多等 15 秒
     const timeoutPromise = (async () => {
       await sleep(CONFIG.WECHAT_HANDLE_MS_TIME)
       return genTimeoutResponse()
@@ -119,11 +118,7 @@ export class WeChat implements Platform<'wechat', RecvPlainData> {
       this.logger.debug(`${MODULE} echostr 缺失`)
       return genMyResponse(errCodeMap.INVALID_PARAMS.msg)
     }
-    const checkSignatureRes = await this.commonUtil.checkSignature(
-      searchParams,
-      'signature',
-      this.ctx.token
-    )
+    const checkSignatureRes = await this.commonUtil.checkSignature(searchParams, 'signature', this.ctx.token)
     if (!checkSignatureRes.success) {
       return genMyResponse(checkSignatureRes.msg)
     }
@@ -161,10 +156,7 @@ export class WeChat implements Platform<'wechat', RecvPlainData> {
     return handleRecvData(recvPlainData)
   }
 
-  genRespTextXmlMsg(
-    content: string,
-    options = { timestamp: Math.floor(Date.now() / 1000) }
-  ) {
+  genRespTextXmlMsg(content: string, options = { timestamp: Math.floor(Date.now() / 1000) }) {
     const { FromUserName, ToUserName } = this.ctx.recvData
 
     const msg = `<xml>

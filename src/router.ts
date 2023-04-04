@@ -43,7 +43,7 @@ async function genMyRequest(request: Request, env: Env, ctx: ExecutionContext, s
 
   const { searchParams } = urlObj
   logger.debug(
-    `${MODULE} ${method} ${url} headers ${JSON.stringify(myHeaders)} query ${JSON.stringify(
+    `${MODULE} ${startTime} ${method} ${url} headers ${JSON.stringify(myHeaders)} query ${JSON.stringify(
       Object.fromEntries(new Map(searchParams))
     )} contentType ${contentType} reqBody ${typeof reqBody === 'string' ? reqBody : JSON.stringify(reqBody)}`
   )

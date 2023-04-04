@@ -69,22 +69,6 @@ export abstract class Base<T extends Platform<PlatformType>> {
   async openAiChat(openai: OpenAiClient, msgContent: string, msgId: string, msgTokenCount: number) {
     // 根据 msgId 看是否收到过，一般是平台发起的重试
     const kvPrompt = this.kvPrompt(msgId)
-    const kvAnswer = this.kvAnswer(msgId)
-    const [promptRes, answerRes] = await Promise.all([kvPrompt.get(), kvAnswer.get()])
-    if (!promptRes.success || !answerRes.success) {
-      this.logger.info(`${MODULE} ${msgId} 获取聊天记录失败 ${promptRes.msg} ${answerRes.msg}`)
-      return `获取聊天记录失败 ${promptRes.msg} ${answerRes.msg}`
-    }
-    if (promptRes.data) {
-      // 已有回答则直接返回
-      if (answerRes.data) {
-        this.logger.debug(`${MODULE} ${msgId} 已有回答直接返回`)
-        return answerRes.data
-      }
-      // 否则提示用户稍等重试
-      return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
-    }
-
     await kvPrompt.set(msgContent)
 
     if (this.ctx.chatType === '单聊') {
@@ -106,6 +90,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
       if (r.data.finishReason !== 'stop') {
         responseMsgContent = `${responseMsgContent}\n(因${finishReasonZh}未返回完全)`
       }
+      const kvAnswer = this.kvAnswer(msgId)
       this.request.ctx.waitUntil(kvAnswer.set(responseMsgContent))
       return responseMsgContent
     }
@@ -122,17 +107,6 @@ export abstract class Base<T extends Platform<PlatformType>> {
       return `获取聊天记录失败 ${lastChatPromptRes.msg} ${lastChatAnswerRes.msg}`
     }
 
-    if (lastChatPromptRes.data && lastChatPromptRes.data.msgId === msgId) {
-      // 已有回答则直接返回
-      if (lastChatAnswerRes.data) {
-        this.logger.debug(`${MODULE} ${msgId} 已有回答直接返回`)
-        return lastChatAnswerRes.data.content
-      }
-      // 否则提示用户稍等重试
-      return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
-    }
-
-    // 没有 conversationId 则用 reqId 作为 conversationId
     const conversationId = lastChatPromptRes.data?.conversationId ?? this.request.reqId
     this.ctx.conversationId = conversationId
 

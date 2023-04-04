@@ -1,9 +1,10 @@
-import { genFail, genSuccess, genMyResponse } from '../../../utils'
+import { genFail, genSuccess, genMyResponse, sleep } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG, commandName } from '../config'
-import * as kv from '../kv'
+import { CONFIG as WE_CHAT_CONFIG } from '../../../platform/wechat/wechat'
 import { estimateTokenCount } from '../utils'
 import { Base } from './base'
+import * as globalKV from '../../../kv'
 
 import type * as wechatType from '../../../platform/wechat/wechatType'
 import type * as weworkType from '../../../platform/wechat/weworkType'
@@ -13,6 +14,8 @@ import type { WeWork } from '../../../platform/wechat/wework'
 const MODULE = 'src/openai/platform/wechatBase.ts'
 
 export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<T> {
+  protected platformTryTimes = 1
+
   abstract initCtx(): Promise<string | undefined>
 
   async initChatType() {
@@ -27,13 +30,21 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
   }
 
   async handleRequest() {
-    return this.platform.handleRequest(this.handleRecvData.bind(this), () => {
+    return this.platform.handleRequest(this.handleRecvData.bind(this), async () => {
       const { recvData } = this.platform.ctx
 
+      if (this.platformTryTimes === 1 || this.platformTryTimes === 2) {
+        // 第 1，2 次请求 openAi 的让平台超时重试
+        this.logger.debug(`${MODULE} 第${this.platformTryTimes}次超时回复`)
+        await sleep(2000)
+        return genMyResponse('success')
+      }
+
       const msg =
-        !this.ctx.isRequestOpenAi || 'Event' in recvData || !recvData.MsgId
+        !this.ctx.isRequestOpenAi || 'Event' in recvData
           ? '服务异常，请稍后重试'
           : `正在处理中，请稍后用\n${commandName.retry} ${recvData.MsgId}\n命令获取回答`
+      this.logger.debug(`${MODULE} 超时兜底回复 ${msg}`)
       return this.genWeChatTextXmlResponse(msg)
     })
   }
@@ -90,6 +101,50 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
       return this.platform.genRespTextXmlMsg(`未绑定 OpenAI api key，请先使用 ${commandName.bindKey} 命令进行绑定`)
     }
 
+    // 根据 msgId 看是否是平台发起的重试
+    const msgId = recvMsg.MsgId
+    const kvMsgTryTimes = this.kvMsgTryTimes(msgId)
+    const kvAnswer = this.kvAnswer(msgId)
+    const [tryTimesRes, answerRes] = await Promise.all([kvMsgTryTimes.getJson(), kvAnswer.get()])
+    if (!tryTimesRes.success || !answerRes.success) {
+      this.logger.info(`${MODULE} ${msgId} 获取消息记录失败 ${tryTimesRes.msg} ${answerRes.msg}`)
+      return this.platform.genRespTextXmlMsg(`获取消息记录失败 ${tryTimesRes.msg} ${answerRes.msg}`)
+    }
+
+    // 有则是重试
+    if (tryTimesRes.data) {
+      this.platformTryTimes = tryTimesRes.data + 1
+      this.logger.debug(`${MODULE} ${msgId} 第${this.platformTryTimes}次`)
+      // 已有回答则直接返回
+      if (answerRes.data) {
+        this.logger.debug(`${MODULE} ${msgId} 已有回答直接返回`)
+        return this.platform.genRespTextXmlMsg(answerRes.data)
+      }
+      this.request.ctx.waitUntil(kvMsgTryTimes.setWithStringify(this.platformTryTimes))
+
+      // 否则等一下在超时之前再尝试一次
+      const waitTime = WE_CHAT_CONFIG.WECHAT_HANDLE_MS_TIME - (Date.now() - this.request.startTime) - 1000
+      this.logger.debug(`${MODULE} waitTime ${waitTime} 等一下再试`)
+      if (waitTime > 0) {
+        await sleep(waitTime)
+      }
+      const res = await kvAnswer.get()
+      if (!res.success) {
+        return this.platform.genRespTextXmlMsg(`获取回答失败 ${answerRes.msg}`)
+      }
+      if (res.data) {
+        this.logger.debug(`${MODULE} ${msgId} 等到回答返回`)
+        return this.platform.genRespTextXmlMsg(res.data)
+      }
+
+      // 第 2 次请求 openAi 的让平台超时重试
+      if (this.platformTryTimes === 2) {
+        await sleep(2000)
+      }
+      return this.platform.genRespTextXmlMsg(`正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`)
+    }
+
+    this.request.ctx.waitUntil(kvMsgTryTimes.setWithStringify(1))
     const respMsg = await this.openAiHandle(recvMsg.Content, recvMsg.MsgId, recvMsgTokenCount)
     return this.platform.genRespTextXmlMsg(respMsg)
   }
@@ -104,6 +159,8 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
 
     return this.platform.genRespTextXmlMsg('success')
   }
+
+  protected kvMsgTryTimes = (msgId: string) => globalKV.createObj<number>(this.kvUserDimensionKey('tryTimes').child(msgId).key)
 
   private async genWeChatTextXmlResponse(xmlMsg: string) {
     const msg = this.platform.genRespTextXmlMsg(xmlMsg)

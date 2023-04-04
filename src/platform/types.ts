@@ -9,10 +9,7 @@ export type RecvMsg = WeChatRecvPlainData | WeWorkRecvPlainData
 
 export type HandleRecvData<T> = (recvMsg: T) => Promise<MyResponse> | MyResponse
 
-export interface Platform<
-  T extends PlatformType = PlatformType,
-  K extends RecvMsg = RecvMsg
-> {
+export interface Platform<T extends PlatformType = PlatformType, K extends RecvMsg = RecvMsg> {
   readonly ctx: {
     platform: T
     appid: string
@@ -23,5 +20,8 @@ export interface Platform<
   readonly id: string
   logger: Logger
 
-  handleRequest(handleRecvMsg: HandleRecvData<K>): Promise<MyResponse>
+  handleRequest(
+    handleRecvMsg: HandleRecvData<K>,
+    genTimeoutResponse: () => Promise<MyResponse> | MyResponse
+  ): Promise<MyResponse>
 }

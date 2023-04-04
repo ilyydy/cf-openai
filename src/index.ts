@@ -8,8 +8,6 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-const startTime = Date.now()
-
 import { handleRequest } from './router'
 import { errorToString, logger } from './utils'
 
@@ -17,6 +15,7 @@ import type { Env } from './types'
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const startTime = Date.now()
     try {
       const resp = await handleRequest(request, env, ctx, startTime)
       return resp
