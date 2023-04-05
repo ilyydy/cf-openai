@@ -3,8 +3,10 @@ export interface GlobalConfig {
   DEBUG_MODE: boolean
   // echo 模式
   ECHO_MODE: boolean
-  // 告警地址
+  // 告警 URL
   ALARM_URL: string
+  // 认证为 admin 的 token
+  ADMIN_AUTH_TOKEN: string
   // 当前版本创建时间
   // BUILD_TIMESTAMP: number
   // 当前版本 commit id
@@ -13,11 +15,11 @@ export interface GlobalConfig {
 
 export interface WeChatConfig {
   // admin 用户名单
-  WECHAT_ADMIN_USER_ID_LIST: string[],
+  WECHAT_ADMIN_USER_ID_LIST: string[]
   // 游客的默认 openai key
-  WECHAT_GUEST_OPENAI_KEY: string,
+  WECHAT_GUEST_OPENAI_KEY: string
   // admin 用户的默认 openai key
-  WECHAT_ADMIN_OPENAI_KEY: string,
+  WECHAT_ADMIN_OPENAI_KEY: string
   // 处理微信请求的最大毫秒数
   WECHAT_HANDLE_MS_TIME: number
   // 允许访问的 id 列表
@@ -28,10 +30,33 @@ export interface WeChatConfig {
    */
   // 公众号 appid
   // WECHAT_${this.id}_APPID
+  // 公众号 secret
+  // WECHAT_${this.id}_SECRET
   // 微信后台配置的 token
   // WECHAT_${this.id}_TOKEN
   // encodingAESKey
   // WECHAT_${this.id}_AES_KEY
+}
+
+export interface WeWorkConfig {
+  // 处理企业微信请求的最大毫秒数
+  WEWORK_HANDLE_MS_TIME: number
+  // 允许访问的 id 列表
+  WEWORK_ID_LIST: string[]
+
+  /**
+   * 动态环境变量
+   */
+  // admin 用户名单
+  // WEWORK_${this.id}_ADMIN_USER_ID_LIST: string[]
+  // 企业 corpid
+  // WEWORK_${this.id}_APPID
+  // 应用 secret
+  // WEWORK_${this.id}_SECRET
+  // 应用 token
+  // WEWORK_${this.id}_TOKEN
+  // 应用 encodingAESKey
+  // WEWORK_${this.id}_AES_KEY
 }
 
 export interface OpenAiConfig {
@@ -42,7 +67,10 @@ export interface OpenAiConfig {
   // OpenAI API key 长度 范围
   OPEN_AI_API_KEY_MIN_LEN: number
   OPEN_AI_API_KEY_MAX_LEN: number
-  OPEN_AI_API_KEY_OCCUPYING_DURATION: number,
+  // 游客的默认 openai key
+  GUEST_KEY: string
+  // admin 用户的默认 openai key
+  ADMIN_KEY: string
   // OpenAI 的用量地址
   OPEN_AI_USAGE: string
   // OpenAI 的免费用量地址
@@ -51,21 +79,26 @@ export interface OpenAiConfig {
   OPEN_AI_API_EXTRA_PARAMS: Record<string, any>
   // OpenAI API 请求超时毫秒
   OPEN_AI_API_TIMEOUT_MS: number
+  // OpenAI API key 使用间隔，单位秒，用于限流
+  OPEN_AI_API_KEY_OCCUPYING_DURATION: number
   // 单次请求 OpenAI 最大 token 数
   MAX_CHAT_TOKEN_NUM: number
   // OpenAI 回复的最小 token 数
   MIN_CHAT_RESPONSE_TOKEN_NUM: number
   // 串聊最大历史记录长度
   MAX_HISTORY_LENGTH: number
-  // 消息的保存时长，分钟
+  // 提问/回答的保存时长，分钟
   ANSWER_EXPIRES_MINUTES: number
   // 全局默认初始化消息
   SYSTEM_INIT_MESSAGE: string
+  // 用户关注应用时发出的欢迎信息
+  WELCOME_MESSAGE: string
 }
 
 export interface Env
   extends Partial<GlobalConfig>,
     Partial<WeChatConfig>,
+    Partial<WeWorkConfig>,
     Partial<OpenAiConfig> {
   // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
   KV: KVNamespace
@@ -82,6 +115,7 @@ export interface Env
 
 export interface MyRequest<T = string | Record<string, any> | null> {
   reqId: string
+  startTime: number
   url: string
   urlObj: URL
   method: string

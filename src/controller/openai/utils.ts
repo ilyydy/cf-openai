@@ -4,8 +4,17 @@ export function getApiKeyWithMask(apiKey: string) {
   return `${apiKey.slice(0, 6)}****${apiKey.slice(apiKey.length - 4)}`
 }
 
-export function getWeChatOpenIdWithMask(text: string): string {
-  return `${text.slice(0, 6)}****${text.slice(text.length - 4)}`
+export function getTextWithMask(text: string) {
+  const len = text.length
+  if (len <= 1) {
+    return text
+  }
+  if (len === 2) {
+    return `${text[0]}****`
+  }
+
+  const maskLen = Math.min(Math.floor(len / 3), 4)
+  return `${text.slice(0, maskLen)}****${text.slice(len - maskLen)}`
 }
 
 /**

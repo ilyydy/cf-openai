@@ -1,9 +1,9 @@
 import { CONFIG } from './config'
 import { errorToString, genFail, genSuccess, sleep } from '../../utils'
+import * as kv from './kv'
 
 import type openai from 'openai'
 import type { Logger } from '../../utils'
-import * as kv from './kv';
 
 const MODULE = 'src/controller/openai/openAiClient.ts'
 
@@ -41,7 +41,7 @@ export const defaultChatCompletionConfig: Omit<
 }
 
 export class OpenAiClient {
-  constructor(readonly apiKey: string, readonly logger: Logger) { }
+  constructor(readonly apiKey: string, readonly logger: Logger) {}
 
   async base<T = any>(params: {
     basePath?: string
@@ -54,12 +54,16 @@ export class OpenAiClient {
       init = {},
     } = params
 
+    if (CONFIG.OPEN_AI_API_KEY_OCCUPYING_DURATION > 0) {
+      await this.waitToHoldApiKey(this.apiKey)
+    }
+
     const controller = new AbortController()
     const timer = setTimeout(
       () => controller.abort(),
       init.timeout || CONFIG.OPEN_AI_API_TIMEOUT_MS
     )
-    await this.waitToHoldApiKey(this.apiKey);
+
     const start = Date.now()
     try {
       const resp = await fetch(`${basePath}${extraPath}`, {
@@ -88,7 +92,8 @@ export class OpenAiClient {
         `${MODULE} 请求 OpenAI 异常 ${Date.now() - start} ${errorToString(err)}`
       )
       return genFail(
-        `请求 OpenAI 异常\n> ${err.name === 'AbortError' ? '请求超时' : err.message
+        `请求 OpenAI 异常\n> ${
+          err.name === 'AbortError' ? '请求超时' : err.message
         }`
       )
     } finally {
@@ -108,32 +113,6 @@ export class OpenAiClient {
 
     const { data } = res.data
     return genSuccess(data)
-  }
-
-  async getUsage(startDate: string, endDate: string) {
-    const res = await this.base<Usage>({
-      basePath: `${CONFIG.OPEN_AI_USAGE}?end_date=${endDate}&start_date=${startDate}`,
-      init: {
-        method: 'GET',
-        timeout: 3000,
-      },
-    })
-    if (!res.success) return res
-
-    return genSuccess(res.data)
-  }
-
-  async getFreeUsage() {
-    const res = await this.base<FreeUsage>({
-      basePath: CONFIG.OPEN_AI_FREE_USAGE,
-      init: {
-        method: 'GET',
-        timeout: 3000,
-      },
-    })
-    if (!res.success) return res
-
-    return genSuccess(res.data)
   }
 
   async createCompletion(
@@ -200,29 +179,108 @@ export class OpenAiClient {
     return genFail(`OpenAI 返回异常\n> 数据为空`)
   }
 
+  /**
+   * 用 kv 实现限流只能说勉强能用
+   * TODO @see https://github.com/ilyydy/cf-openai/issues/14
+   */
   async waitToHoldApiKey(apiKey: string) {
-    const apiKeyExpiredTimeRes = await kv.getApiKeyOccupied(apiKey);
-    let waitDuration = 0;
-    if (!apiKeyExpiredTimeRes.success) {
-      this.logger.error(`${MODULE} 获取 apiKey '${apiKey}' 的过期时间失败`);
+    const waitDurationRes = await kv.getApiKeyWaitDuration(apiKey)
+    if (!waitDurationRes.success) {
+      this.logger.error(`${MODULE} 获取 apiKey '${apiKey}' 的过期时间失败`)
       return '服务异常'
-    } else {
-      const apiKeyExpiredTime = apiKeyExpiredTimeRes.data;
-      if (!apiKeyExpiredTime) {
-        this.logger.debug(`${MODULE} apiKey '${apiKey}' 未被占用，空值`);
-      } else {
-        waitDuration = parseInt(apiKeyExpiredTime) - Date.now();
-        if (waitDuration <= 0) {
-          this.logger.debug(`${MODULE} apiKey '${apiKey}' 未被占用，已过期 ${apiKeyExpiredTime}`);
-          waitDuration = 0;
-        } else {
-          this.logger.debug(`${MODULE} apiKey '${apiKey}' 已被占用，等待 ${waitDuration}ms`);
-        }
-      }
     }
-    await kv.setApiKeyOccupied(apiKey, CONFIG.OPEN_AI_API_KEY_OCCUPYING_DURATION + waitDuration / 1000 + 1);
+
+    const waitDuration = waitDurationRes.data
+    this.logger.debug(`${MODULE} apiKey '${apiKey}' waitDuration ${waitDuration}ms`)
+
+    await kv.setApiKeyOccupied(apiKey, CONFIG.OPEN_AI_API_KEY_OCCUPYING_DURATION * 1000 + waitDuration + 1000)
     if (waitDuration > 0) {
-      await sleep(waitDuration);
+      await sleep(waitDuration)
     }
+  }
+}
+
+export class OpenAiBrowserClient {
+  constructor(readonly sessionKey: string, readonly logger: Logger) {}
+
+  async base<T = any>(params: {
+    basePath?: string
+    extraPath?: string
+    init?: RequestInit<RequestInitCfProperties> & { timeout?: number }
+  }) {
+    const {
+      basePath = CONFIG.OPEN_AI_API_PREFIX,
+      extraPath = '',
+      init = {},
+    } = params
+
+
+    const controller = new AbortController()
+    const timer = setTimeout(
+      () => controller.abort(),
+      init.timeout || CONFIG.OPEN_AI_API_TIMEOUT_MS
+    )
+
+    const start = Date.now()
+    try {
+      const resp = await fetch(`${basePath}${extraPath}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.sessionKey}`,
+        },
+        ...init,
+        signal: controller.signal,
+      })
+
+      const json = await resp.json<Record<string, any>>()
+      this.logger.debug(
+        `${MODULE} OpenAI 回复 ${Date.now() - start} ${JSON.stringify(json)}`
+      )
+
+      if ('error' in json && json.error) {
+        this.logger.error(`${MODULE} OpenAI 错误 ${JSON.stringify(json.error)}`)
+        return genFail(`OpenAI 错误\n> ${(json.error as Error).message}`)
+      }
+
+      return genSuccess(json as T)
+    } catch (e) {
+      const err = e as Error
+      this.logger.error(
+        `${MODULE} 请求 OpenAI 异常 ${Date.now() - start} ${errorToString(err)}`
+      )
+      return genFail(
+        `请求 OpenAI 异常\n> ${
+          err.name === 'AbortError' ? '请求超时' : err.message
+        }`
+      )
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  async getUsage(startDate: string, endDate: string) {
+    const res = await this.base<Usage>({
+      basePath: `${CONFIG.OPEN_AI_USAGE}?end_date=${endDate}&start_date=${startDate}`,
+      init: {
+        method: 'GET',
+        timeout: 3000,
+      },
+    })
+    if (!res.success) return res
+
+    return genSuccess(res.data)
+  }
+
+  async getFreeUsage() {
+    const res = await this.base<FreeUsage>({
+      basePath: CONFIG.OPEN_AI_FREE_USAGE,
+      init: {
+        method: 'GET',
+        timeout: 3000,
+      },
+    })
+    if (!res.success) return res
+
+    return genSuccess(res.data)
   }
 }

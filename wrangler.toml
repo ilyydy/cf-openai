@@ -20,3 +20,14 @@ WECHAT_ADMIN_USER_ID_LIST = "user1"
 
 # 微信公众号开启安全模式或兼容模式时要配的。若想提高安全性，可注释下行，在 Cloudflare Worker 中以 Secret 模式配置 WECHAT_id1_AES_KEY
 WECHAT_id1_AES_KEY = "EncodingAESKey"
+
+
+# 企业微信应用必配的
+WEWORK_ID_LIST = "id1"
+WEWORK_id1_APPID = "appid1"
+# 若想提高安全性，可注释下行，在 Cloudflare Worker 中以 Secret 模式配置 WEWORK_id1_AES_KEY 和 WEWORK_id1_TOKEN
+WEWORK_id1_TOKEN = "token1"
+WEWORK_id1_AES_KEY = "EncodingAESKey"
+
+# 非必须
+WEWORK_ADMIN_USER_ID_LIST = "user1"

@@ -15,8 +15,9 @@ import type { Env } from './types'
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const startTime = Date.now()
     try {
-      const resp = await handleRequest(request, env, ctx)
+      const resp = await handleRequest(request, env, ctx, startTime)
       return resp
     } catch (error) {
       logger.error(`服务异常 ${errorToString(error as Error)}`)

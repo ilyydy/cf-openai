@@ -9,15 +9,11 @@ const MODULE = 'src/router.ts'
 // /openai/${platform}/${id}
 export const openAiPathReg = /^\/openai\/([^/]+)\/([^/]+)$/
 
-export async function handleRequest(
-  request: Request,
-  env: Env,
-  ctx: ExecutionContext
-) {
+export async function handleRequest(request: Request, env: Env, ctx: ExecutionContext, startTime: number) {
   init(env)
   logger.debug(`${MODULE} global config ${JSON.stringify(CONFIG)}`)
 
-  const myRequest = await genMyRequest(request, env, ctx)
+  const myRequest = await genMyRequest(request, env, ctx, startTime)
   const pathname = myRequest.urlObj.pathname
 
   if (pathname === '/') {
@@ -35,7 +31,7 @@ export async function handleRequest(
   return new Response('NOTFOUND', { status: 404 })
 }
 
-async function genMyRequest(request: Request, env: Env, ctx: ExecutionContext) {
+async function genMyRequest(request: Request, env: Env, ctx: ExecutionContext, startTime: number) {
   const reqId = genReqId()
 
   const { url, method, headers } = request
@@ -47,17 +43,14 @@ async function genMyRequest(request: Request, env: Env, ctx: ExecutionContext) {
 
   const { searchParams } = urlObj
   logger.debug(
-    `${MODULE} ${method} ${url} headers ${JSON.stringify(
-      myHeaders
-    )} query ${JSON.stringify(
+    `${MODULE} ${startTime} ${method} ${url} headers ${JSON.stringify(myHeaders)} query ${JSON.stringify(
       Object.fromEntries(new Map(searchParams))
-    )} contentType ${contentType} reqBody ${
-      typeof reqBody === 'string' ? reqBody : JSON.stringify(reqBody)
-    }`
+    )} contentType ${contentType} reqBody ${typeof reqBody === 'string' ? reqBody : JSON.stringify(reqBody)}`
   )
 
   const myRequest: MyRequest = {
     reqId,
+    startTime,
     url,
     urlObj,
     method,
