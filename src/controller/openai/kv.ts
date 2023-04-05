@@ -3,6 +3,7 @@ import { set, get, getWithMetadata, del, setWithStringify } from '../../kv'
 
 import type openai from 'openai'
 import type { ChatType } from './types'
+import { CONFIG } from './config'
 
 const { TIME } = CONST
 
@@ -45,6 +46,22 @@ export async function getApiKey(
       // cacheTtl: 3600,
     }
   )
+}
+
+function getApiKeyOccupiedKey(apiKey: string) {
+  return `openai:apiKeyOccupied:${apiKey}`;
+}
+
+export async function getApiKeyOccupied(apiKey: string) {
+  return get<string>(getApiKeyOccupiedKey(apiKey));
+}
+
+export async function setApiKeyOccupied(apiKey: string, duration: number) {
+  const key = getApiKeyOccupiedKey(apiKey);
+  if (duration <= 0) {
+    return del(key);
+  }
+  return set(key, `${Date.now() + duration * 1000}`, { expirationTtl: Math.max(duration, 60) });
 }
 
 export function getChatTypeKey(
@@ -227,7 +244,7 @@ export async function setPrompt(
   msgId: string
 ) {
   return setWithStringify(getPromptKey(platform, appid, userId, msgId), 1, {
-    expirationTtl: CONST.TIME.ONE_MIN,
+    expirationTtl: CONFIG.ANSWER_EXPIRES_MINUTES * CONST.TIME.ONE_MIN,
   })
 }
 
@@ -258,7 +275,7 @@ export async function setAnswer(
   return set(
     getAnswerKey(platform, appid, userId, msg.msgId),
     msg.content,
-    { expirationTtl: CONST.TIME.ONE_MIN }
+    { expirationTtl: CONFIG.ANSWER_EXPIRES_MINUTES * CONST.TIME.ONE_MIN }
   )
 }
 
@@ -269,4 +286,46 @@ export async function getAnswer(
   msgId: string
 ) {
   return get(getAnswerKey(platform, appid, userId, msgId))
+}
+
+export class KvObject<T = string> {
+  constructor(readonly key: string, readonly ttl: number) {
+  }
+
+  async get(): Promise<T | null> {
+    const result = await get<T>(this.key);
+    if (result.success) {
+      return result.data;
+    }
+    return null;
+  }
+
+  async set(value: T) {
+    const options : KVNamespacePutOptions = { expirationTtl: Math.max(this.ttl, 60) }
+    if (typeof value === 'string') {
+      return await set(this.key, value.toString(), options);
+    }
+    return await setWithStringify(this.key, value, options);
+  }
+
+  async del() {
+    return await del(this.key);
+  }
+
+  expires(seconds: number): KvObject<T> {
+    return new KvObject<T>(this.key, seconds);
+  }
+
+  child<T>(key: string): KvObject<T> {
+    return KvObject.of<T>(this.key, key).expires(this.ttl);
+  }
+
+  static of<T = string>(...parts: string[]): KvObject<T> {
+    return new KvObject<T>(parts.join(':'), 60);
+  }
+
+  static lastMessage(userId: string): KvObject<string> {
+    return KvObject.of("lastMessage", userId).expires(3 * 60);
+  }
+
 }

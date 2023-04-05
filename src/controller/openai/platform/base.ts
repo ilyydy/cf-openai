@@ -1,3 +1,4 @@
+import { KvObject } from './../kv';
 import {
   genFail,
   genSuccess,
@@ -10,7 +11,7 @@ import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG } from '../config'
 import { OpenAiClient } from '../openAiClient'
 import * as kv from '../kv'
-import { estimateTokenCount, getApiKeyWithMask } from '../utils'
+import { estimateTokenCount, getApiKeyWithMask, getWeChatOpenIdWithMask } from '../utils'
 import { platformMap } from '../../../platform'
 
 import type openai from 'openai'
@@ -103,8 +104,9 @@ export abstract class Base<T extends Platform> {
         this.logger.debug(`${MODULE} ${msgId} 已有回答直接返回`)
         return answerRes.data
       }
+      await KvObject.lastMessage(userId).set(msgId);
       // 否则提示用户稍等重试
-      return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
+      return this.getRetryMessage(msgId)
     }
 
     await kv.setPrompt(platform, appid, userId, msgId)
@@ -156,7 +158,8 @@ export abstract class Base<T extends Platform> {
         return lastChatAnswerRes.data.content
       }
       // 否则提示用户稍等重试
-      return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
+      await KvObject.lastMessage(userId).set(msgId);
+      return this.getRetryMessage(msgId)
     }
 
     // 没有 conversationId 则用 reqId 作为 conversationId
@@ -380,8 +383,7 @@ export abstract class Base<T extends Platform> {
         )
       } else {
         this.logger.info(
-          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${
-            lastChatPromptRes.data?.msgId ?? ''
+          `${MODULE} kv 存的提问已由 ${msgId} 变为 ${lastChatPromptRes.data?.msgId ?? ''
           }`
         )
       }
@@ -424,9 +426,19 @@ export abstract class Base<T extends Platform> {
       fn: this.createNewChat.bind(this),
     },
     [commandName.retry]: {
-      description: '根据 msgId 获取对于回答，回答只会保留 1 分钟',
+      description: '根据 msgId 获取对于回答，回答只会保留 3 分钟',
       roles: [CONST.ROLE.USER],
       fn: this.retry.bind(this),
+    },
+    [commandName.retryLastMessage]: {
+      description: '重试上一个延迟的回答',
+      roles: [CONST.ROLE.USER],
+      fn: this.retryLastMessage.bind(this),
+    },
+    [commandName.retryLastMessage2]: {
+      description: '重试上一个延迟的回答',
+      roles: [CONST.ROLE.USER],
+      fn: this.retryLastMessage.bind(this),
     },
     [commandName.usage]: {
       description: '获取本月用量信息，可能有 5 分钟左右的延迟',
@@ -547,6 +559,7 @@ export abstract class Base<T extends Platform> {
     if (!msgId || !msgId.trim()) {
       return genFail('msgId 为空')
     }
+    msgId = msgId.trim().split("\n")[0];
 
     const [promptRes, answerRes] = await Promise.all([
       kv.getPrompt(platform, appid, userId, msgId),
@@ -561,12 +574,17 @@ export abstract class Base<T extends Platform> {
         return genSuccess(answerRes.data)
       }
       // 否则提示用户稍等重试
-      return genSuccess(
-        `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`
-      )
+      return genSuccess(this.getRetryMessage(msgId))
     }
 
     return genSuccess('该 msgId 无记录，可能已过期')
+  }
+
+  protected async retryLastMessage(params: any) {
+    const userId = this.platform.ctx.userId
+    const msgId = await KvObject.lastMessage(userId).get() ?? ''
+    this.logger.debug(`retry last message ${msgId}`);
+    return await this.retry(msgId);
   }
 
   protected async getUsage(params: any) {
@@ -577,9 +595,7 @@ export abstract class Base<T extends Platform> {
     if (!r.success) {
       return genFail(`获取失败 ${r.msg}`)
     }
-    const msg = `${startDate} ~ ${endDate}(UTC时间)已用: $${
-      r.data.total_usage / 100
-    }`
+    const msg = `${startDate} ~ ${endDate}(UTC时间)已用: $${r.data.total_usage / 100}`
     return genSuccess(msg)
   }
 
@@ -600,7 +616,7 @@ export abstract class Base<T extends Platform> {
       '当前系统信息如下: ',
       `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
       `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
-      `当前用户: ${userId}`,
+      `当前用户: ${getWeChatOpenIdWithMask(userId)}`,
     ]
 
     if (GLOBAL_CONFIG.DEBUG_MODE) {
@@ -658,6 +674,12 @@ export abstract class Base<T extends Platform> {
     this.logger = logger
     return logger
   }
+
+  protected getRetryMessage(msgId: string): string {
+    // return `正在处理中，请稍后用\n${commandName.retry} ${msgId}\n命令获取回答`;
+    return `${commandName.retry} ${msgId}` +
+      '\n处理中，请稍后输入 .. 获取回答';
+  }
 }
 
 export const commandName = {
@@ -674,6 +696,8 @@ export const commandName = {
   setEnv: '/setEnv',
   system: '/system',
   faq: '/faq',
+  retryLastMessage: '..',
+  retryLastMessage2: '。。',
   // TODO 发消息给开发者
 }
 
