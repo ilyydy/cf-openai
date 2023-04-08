@@ -5,6 +5,8 @@ export interface GlobalConfig {
   ECHO_MODE: boolean
   // 告警 URL
   ALARM_URL: string
+  // 用户反馈 URL
+  FEEDBACK_URL: string
   // 认证为 admin 的 token
   ADMIN_AUTH_TOKEN: string
   // 当前版本创建时间
@@ -75,8 +77,8 @@ export interface OpenAiConfig {
   OPEN_AI_USAGE: string
   // OpenAI 的免费用量地址
   OPEN_AI_FREE_USAGE: string
-  // OpenAI API 额外参数
-  OPEN_AI_API_EXTRA_PARAMS: Record<string, any>
+  // OpenAI API chat 额外参数
+  OPEN_AI_API_CHAT_EXTRA_PARAMS: Record<string, any>
   // OpenAI API 请求超时毫秒
   OPEN_AI_API_TIMEOUT_MS: number
   // OpenAI API key 使用间隔，单位秒，用于限流

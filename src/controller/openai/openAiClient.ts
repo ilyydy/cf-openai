@@ -33,11 +33,10 @@ export const defaultCompletionConfig: openai.CreateCompletionRequest = {
   max_tokens: CONFIG.MAX_CHAT_TOKEN_NUM,
 }
 
-export const defaultChatCompletionConfig: Omit<
-  openai.CreateChatCompletionRequest,
-  'messages'
-> = {
+export const defaultChatCompletionConfig: Omit<openai.CreateChatCompletionRequest, 'messages'> = {
   model: CONFIG.CHAT_MODEL,
+  max_tokens: CONFIG.MAX_CHAT_TOKEN_NUM,
+  ...CONFIG.OPEN_AI_API_CHAT_EXTRA_PARAMS,
 }
 
 export class OpenAiClient {
@@ -48,21 +47,14 @@ export class OpenAiClient {
     extraPath?: string
     init?: RequestInit<RequestInitCfProperties> & { timeout?: number }
   }) {
-    const {
-      basePath = CONFIG.OPEN_AI_API_PREFIX,
-      extraPath = '',
-      init = {},
-    } = params
+    const { basePath = CONFIG.OPEN_AI_API_PREFIX, extraPath = '', init = {} } = params
 
     if (CONFIG.OPEN_AI_API_KEY_OCCUPYING_DURATION > 0) {
       await this.waitToHoldApiKey(this.apiKey)
     }
 
     const controller = new AbortController()
-    const timer = setTimeout(
-      () => controller.abort(),
-      init.timeout || CONFIG.OPEN_AI_API_TIMEOUT_MS
-    )
+    const timer = setTimeout(() => controller.abort(), init.timeout || CONFIG.OPEN_AI_API_TIMEOUT_MS)
 
     const start = Date.now()
     try {
@@ -76,9 +68,7 @@ export class OpenAiClient {
       })
 
       const json = await resp.json<Record<string, any>>()
-      this.logger.debug(
-        `${MODULE} OpenAI 回复 ${Date.now() - start} ${JSON.stringify(json)}`
-      )
+      this.logger.debug(`${MODULE} OpenAI 回复 ${Date.now() - start} ${JSON.stringify(json)}`)
 
       if ('error' in json && json.error) {
         this.logger.error(`${MODULE} OpenAI 错误 ${JSON.stringify(json.error)}`)
@@ -88,14 +78,8 @@ export class OpenAiClient {
       return genSuccess(json as T)
     } catch (e) {
       const err = e as Error
-      this.logger.error(
-        `${MODULE} 请求 OpenAI 异常 ${Date.now() - start} ${errorToString(err)}`
-      )
-      return genFail(
-        `请求 OpenAI 异常\n> ${
-          err.name === 'AbortError' ? '请求超时' : err.message
-        }`
-      )
+      this.logger.error(`${MODULE} 请求 OpenAI 异常 ${Date.now() - start} ${errorToString(err)}`)
+      return genFail(`请求 OpenAI 异常\n> ${err.name === 'AbortError' ? '请求超时' : err.message}`)
     } finally {
       clearTimeout(timer)
     }
@@ -115,10 +99,7 @@ export class OpenAiClient {
     return genSuccess(data)
   }
 
-  async createCompletion(
-    prompt: openai.CreateCompletionRequestPrompt,
-    config = defaultCompletionConfig
-  ) {
+  async createCompletion(prompt: openai.CreateCompletionRequestPrompt, config = defaultCompletionConfig) {
     const res = await this.base<openai.CreateCompletionResponse>({
       extraPath: '/completions',
       init: {
@@ -139,18 +120,14 @@ export class OpenAiClient {
         usage,
         msg: first.text,
         finishReason: first.finish_reason ?? 'unknown',
-        finishReasonZh:
-          finishReasonMap[first.finish_reason as string] ?? '未知',
+        finishReasonZh: finishReasonMap[first.finish_reason as string] ?? '未知',
       })
     }
 
     return genFail(`OpenAI 返回异常\n> 数据为空`)
   }
 
-  async createChatCompletion(
-    messages: openai.ChatCompletionRequestMessage[],
-    config = defaultChatCompletionConfig
-  ) {
+  async createChatCompletion(messages: openai.ChatCompletionRequestMessage[], config = defaultChatCompletionConfig) {
     const res = await this.base<openai.CreateChatCompletionResponse>({
       extraPath: '/chat/completions',
       init: {
@@ -171,8 +148,7 @@ export class OpenAiClient {
         usage: usage as openai.CreateCompletionResponseUsage,
         msg: first.message,
         finishReason: first.finish_reason || 'unknown',
-        finishReasonZh:
-          finishReasonMap[first.finish_reason as string] ?? '未知',
+        finishReasonZh: finishReasonMap[first.finish_reason as string] ?? '未知',
       })
     }
 
@@ -208,18 +184,10 @@ export class OpenAiBrowserClient {
     extraPath?: string
     init?: RequestInit<RequestInitCfProperties> & { timeout?: number }
   }) {
-    const {
-      basePath = CONFIG.OPEN_AI_API_PREFIX,
-      extraPath = '',
-      init = {},
-    } = params
-
+    const { basePath = CONFIG.OPEN_AI_API_PREFIX, extraPath = '', init = {} } = params
 
     const controller = new AbortController()
-    const timer = setTimeout(
-      () => controller.abort(),
-      init.timeout || CONFIG.OPEN_AI_API_TIMEOUT_MS
-    )
+    const timer = setTimeout(() => controller.abort(), init.timeout || CONFIG.OPEN_AI_API_TIMEOUT_MS)
 
     const start = Date.now()
     try {
@@ -233,9 +201,7 @@ export class OpenAiBrowserClient {
       })
 
       const json = await resp.json<Record<string, any>>()
-      this.logger.debug(
-        `${MODULE} OpenAI 回复 ${Date.now() - start} ${JSON.stringify(json)}`
-      )
+      this.logger.debug(`${MODULE} OpenAI 回复 ${Date.now() - start} ${JSON.stringify(json)}`)
 
       if ('error' in json && json.error) {
         this.logger.error(`${MODULE} OpenAI 错误 ${JSON.stringify(json.error)}`)
@@ -245,14 +211,8 @@ export class OpenAiBrowserClient {
       return genSuccess(json as T)
     } catch (e) {
       const err = e as Error
-      this.logger.error(
-        `${MODULE} 请求 OpenAI 异常 ${Date.now() - start} ${errorToString(err)}`
-      )
-      return genFail(
-        `请求 OpenAI 异常\n> ${
-          err.name === 'AbortError' ? '请求超时' : err.message
-        }`
-      )
+      this.logger.error(`${MODULE} 请求 OpenAI 异常 ${Date.now() - start} ${errorToString(err)}`)
+      return genFail(`请求 OpenAI 异常\n> ${err.name === 'AbortError' ? '请求超时' : err.message}`)
     } finally {
       clearTimeout(timer)
     }

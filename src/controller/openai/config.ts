@@ -19,7 +19,8 @@ export const commandName = {
   system: '/system',
   faq: '/faq',
   adminAuth: '/adminAuth',
-  // TODO 发消息给开发者
+  testAlarm: '/testAlarm',
+  feedback: '/feedback',
 }
 
 export const CONFIG: OpenAiConfig = {
@@ -38,8 +39,8 @@ export const CONFIG: OpenAiConfig = {
   OPEN_AI_USAGE: 'https://api.openai.com/dashboard/billing/usage',
   // OpenAI 的免费用量地址
   OPEN_AI_FREE_USAGE: 'https://api.openai.com/dashboard/billing/credit_grants',
-  // OpenAI API 额外参数 TODO
-  OPEN_AI_API_EXTRA_PARAMS: {},
+  // OpenAI API chat 额外参数
+  OPEN_AI_API_CHAT_EXTRA_PARAMS: {},
   // OpenAI API 请求超时，毫秒
   OPEN_AI_API_TIMEOUT_MS: 30000,
   // OpenAI API key 使用间隔，单位秒，用于限流

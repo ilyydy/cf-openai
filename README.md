@@ -61,7 +61,7 @@
 
 ## 企业微信应用接入配置
 
-对比微信，更推荐使用企业微信。优点有：1. 注册后无门槛即有主动向用户推送消息的能力，而微信公众号要认证后才有；2. 企业微信应用的可见范围受控，不像公众号一样完全公开；3. 个人微信加入企业后可在个人微信中通过公司进入应用，只需点击 2 次，而进入订阅号需要更多的点击次数；4. 支持企业微信群机器人告警
+对比微信，更推荐使用企业微信。优点有：1. 企业微信应用的可见范围受控，不像公众号一样完全公开；2. 个人微信加入企业后可在个人微信中通过公司进入应用，只需点击 2 次，而进入订阅号需要更多的点击次数；3. 支持企业微信群机器人告警
 
 1. 注册企业微信，信息随便填，无需认证
 2. [企业微信管理后台-我的企业-企业信息](https://work.weixin.qq.com/wework_admin/frame#profile/enterprise)页面确认自己的企业ID(corpid)
@@ -120,33 +120,36 @@
 | /system           | 用户，管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                            |
 | /faq              | 游客，用户   | 一些常见问题                                                                                                            |
 | /adminAuth        | 游客，用户   | 通过 token 认证成为管理员，避免每个平台配置 admin 用户 ID 的麻烦。需要先配置 ADMIN_AUTH_TOKEN                           |
+| /testAlarm        | 管理员       | 测试发送告警消息。需要先配置 ALARM_URL                                                                                  |
+| /feedback         | 游客，用户   | 用户向开发者发送反馈。需要先配置 FEEDBACK_URL                                                                           |
 
 ## OpenAI 配置
 
-| 配置名                             | 默认值                                                                                                                                    | 说明                                                                                   |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| CHAT_MODEL                         | gpt-3.5-turbo                                                                                                                             | OpenAI 的模型名称                                                                      |
-| OPEN_AI_API_PREFIX                 | <https://api.openai.com/v1>                                                                                                               | OpenAI 的通用 API 前缀                                                                 |
-| GUEST_KEY                          |                                                                                                                                           | 可选，游客的默认 openai key，可被随意使用，跨平台起效，谨慎配置！                      |
-| ADMIN_KEY                          |                                                                                                                                           | 可选，admin 用户的默认 openai key，跨平台起效                                          |
-| OPEN_AI_USAGE                      | <https://api.openai.com/dashboard/billing/usage>                                                                                          | OpenAI 的用量地址                                                                      |
-| OPEN_AI_FREE_USAGE                 | <https://api.openai.com/dashboard/billing/credit_grants>                                                                                  | OpenAI 的免费用量地址                                                                  |
-| OPEN_AI_API_TIMEOUT_MS             | 30000                                                                                                                                     | OpenAI API 请求超时，毫秒                                                              |
-| OPEN_AI_API_KEY_OCCUPYING_DURATION | 0                                                                                                                                         | OpenAI API key 使用间隔，单位秒，用于限流，大于 0 时开启。用 kv 实现限流只能说勉强能用 |
-| MAX_CHAT_TOKEN_NUM                 | 4000                                                                                                                                      | 单次请求 OpenAI 最大 token 数                                                          |
-| MIN_CHAT_RESPONSE_TOKEN_NUM        | 500                                                                                                                                       | OpenAI 回复的最小 token 数                                                             |
-| MAX_HISTORY_LENGTH                 | 20                                                                                                                                        | 串聊最大历史记录长度                                                                   |
-| ANSWER_EXPIRES_MINUTES             | 3                                                                                                                                         | 提问/回答的保存时长，分钟                                                              |
-| SYSTEM_INIT_MESSAGE                | You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023 | 发给 OpenAI 的默认第一条系统消息，可用于调整模型                                       |
-| WELCOME_MESSAGE                    | 欢迎使用，可输入 /help 查看当前可用命令                                                                                                   | 用户关注应用时发出的欢迎信息                                                           |
+| 配置名                             | 默认值                                                                                                                                    | 说明                                                                                                                |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| CHAT_MODEL                         | gpt-3.5-turbo                                                                                                                             | OpenAI 的模型名称                                                                                                   |
+| OPEN_AI_API_PREFIX                 | <https://api.openai.com/v1>                                                                                                               | OpenAI 的通用 API 前缀                                                                                              |
+| GUEST_KEY                          |                                                                                                                                           | 可选，游客的默认 openai key，可被随意使用，跨平台起效，谨慎配置！                                                   |
+| ADMIN_KEY                          |                                                                                                                                           | 可选，admin 用户的默认 openai key，跨平台起效                                                                       |
+| OPEN_AI_USAGE                      | <https://api.openai.com/dashboard/billing/usage>                                                                                          | OpenAI 的用量地址                                                                                                   |
+| OPEN_AI_FREE_USAGE                 | <https://api.openai.com/dashboard/billing/credit_grants>                                                                                  | OpenAI 的免费用量地址                                                                                               |
+| OPEN_AI_API_TIMEOUT_MS             | 30000                                                                                                                                     | OpenAI API 请求超时，毫秒                                                                                           |
+| OPEN_AI_API_KEY_OCCUPYING_DURATION | 0                                                                                                                                         | OpenAI API key 使用间隔，单位秒，用于限流，大于 0 时开启。用 kv 实现限流只能说勉强能用                              |
+| OPEN_AI_API_CHAT_EXTRA_PARAMS      |                                                                                                                                           | OpenAI API chat 额外的全局参数，JSON 字符串，[可用参数](https://platform.openai.com/docs/api-reference/chat/create) | 4000 | 单次请求 OpenAI 最大 token 数 |
+| MIN_CHAT_RESPONSE_TOKEN_NUM        | 500                                                                                                                                       | OpenAI 回复的最小 token 数                                                                                          |
+| MAX_HISTORY_LENGTH                 | 20                                                                                                                                        | 串聊最大历史记录长度                                                                                                |
+| ANSWER_EXPIRES_MINUTES             | 3                                                                                                                                         | 提问/回答的保存时长，分钟                                                                                           |
+| SYSTEM_INIT_MESSAGE                | You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023 | 发给 OpenAI 的默认第一条系统消息，可用于调整模型                                                                    |
+| WELCOME_MESSAGE                    | 欢迎使用，可输入 /help 查看当前可用命令                                                                                                   | 用户关注应用时发出的欢迎信息                                                                                        |
 
 ## 全局配置
 
-| 配置名           | 默认值 | 说明                                                            |
-| ---------------- | ------ | --------------------------------------------------------------- |
-| DEBUG_MODE       | false  | 调试模式，会打印更多日志                                        |
-| ECHO_MODE        | false  | echo 模式，直接返回收到的信息                                   |
-| ALARM_URL        |        | 告警 URL，目前支持企业微信群机器人                              |
-| ADMIN_AUTH_TOKEN |        | 认证为 admin 的 token，应有足够的长度和复杂性，谨慎配置和保存！ |
+| 配置名           | 默认值 | 说明                                                                                                |
+| ---------------- | ------ | --------------------------------------------------------------------------------------------------- |
+| DEBUG_MODE       | false  | 调试模式，会打印更多日志                                                                            |
+| ECHO_MODE        | false  | echo 模式，直接返回收到的信息                                                                       |
+| ALARM_URL        |        | 告警 URL，目前支持企业微信群机器人、自定义地址，对自定义地址会 POST { "msg": "xxxx" } JSON 数据     |
+| FEEDBACK_URL     |        | 用户反馈 URL，目前支持企业微信群机器人、自定义地址，对自定义地址会 POST { "msg": "xxxx" } JSON 数据 |
+| ADMIN_AUTH_TOKEN |        | 认证为 admin 的 token，应有足够的长度和复杂性，谨慎配置和保存！                                     |
 
 ## 已知问题
