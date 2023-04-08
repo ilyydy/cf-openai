@@ -1,3 +1,14 @@
+# [0.2.0](https://github.com/ilyydy/cf-openai/compare/v0.1.0...v0.2.0) (2023-04-08)
+
+
+### Features
+
+* openAI API chat 额外的全局参数 OPEN_AI_API_CHAT_EXTRA_PARAMS ([b7d174f](https://github.com/ilyydy/cf-openai/commit/b7d174fdb4187218e96cbb263972241db5e4ff34))
+* 增加命令 /feedback ([6549bbc](https://github.com/ilyydy/cf-openai/commit/6549bbc792cb87a113c01ffb6a44f8eba4b71666))
+* 增加命令 /testAlarm ([8928d97](https://github.com/ilyydy/cf-openai/commit/8928d97d29469de98907fe0d868f485b65f15a18))
+
+
+
 # [0.1.0](https://github.com/ilyydy/cf-openai/compare/v0.0.2...v0.1.0) (2023-04-04)
 
 
