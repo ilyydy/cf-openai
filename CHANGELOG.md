@@ -1,3 +1,12 @@
+## [0.2.1](https://github.com/ilyydy/cf-openai/compare/v0.2.0...v0.2.1) (2023-04-08)
+
+
+### Bug Fixes
+
+* /usage 改为优先使用 api key ([654cbfc](https://github.com/ilyydy/cf-openai/commit/654cbfc96a0bd351819887c78b7c7ea6d65a1329))
+
+
+
 # [0.2.0](https://github.com/ilyydy/cf-openai/compare/v0.1.0...v0.2.0) (2023-04-08)
 
 

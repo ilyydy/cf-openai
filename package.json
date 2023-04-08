@@ -1,6 +1,6 @@
 {
   "name": "cf-openai",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20230307.0",
     "@commitlint/cli": "^17.5.0",
