@@ -662,7 +662,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
     ]
 
     if (GLOBAL_CONFIG.DEBUG_MODE) {
-      msgList.push(`⭐OpenAI 参数: ${JSON.stringify(CONFIG.OPEN_AI_API_EXTRA_PARAMS)}`)
+      msgList.push(`⭐OpenAI 参数: ${JSON.stringify(CONFIG.OPEN_AI_API_CHAT_EXTRA_PARAMS)}`)
       msgList.push(`⭐初始化文本: ${CONFIG.SYSTEM_INIT_MESSAGE}`)
       msgList.push(`⭐当前 reqId: ${this.request.reqId}`)
       if (conversationId) {
