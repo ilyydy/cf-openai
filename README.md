@@ -102,26 +102,26 @@
 
 输入使用时可忽略大小写
 
-| 命令              | 可用角色     | 说明                                                                                                                    |
-| ----------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| /help             | 游客，用户   | 获取命令帮助信息                                                                                                        |
-| /bindKey          | 游客，用户   | 绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 /testKey 命令测试是否正常可用              |
-| /unbindKey        | 用户         | 解绑 OpenAI api key                                                                                                     |
-| /testKey          | 用户         | 调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量                                                     |
-| /setChatType      | 用户，试用者 | 切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量 |
-| /newChat          | 用户，试用者 | 清除之前的串聊历史记录，开始新的串聊                                                                                    |
-| /retry            | 用户，试用者 | 根据 msgId 获取对应回答，回答只会保留 3 分钟。保留时间可通过 ANSWER_EXPIRES_MINUTES 配置                                |
-| ..                | 用户，试用者 | 重试上一个延迟的回答                                                                                                    |
-| 。。              | 用户，试用者 | 重试上一个延迟的回答                                                                                                    |
-| /bindSessionKey   | 游客，用户   | 绑定 OpenAI session key，可查看用量页面对 <https://api.openai.com/v1/usage> 的请求头获得                                |
-| /unbindSessionKey | 用户         | 解绑 OpenAI session key                                                                                                 |
-| /usage            | 用户         | 获取本月用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI session key                                                  |
-| /freeUsage        | 用户         | 获取免费用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI session key                                                  |
-| /system           | 用户，管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                            |
-| /faq              | 游客，用户   | 一些常见问题                                                                                                            |
-| /adminAuth        | 游客，用户   | 通过 token 认证成为管理员，避免每个平台配置 admin 用户 ID 的麻烦。需要先配置 ADMIN_AUTH_TOKEN                           |
-| /testAlarm        | 管理员       | 测试发送告警消息。需要先配置 ALARM_URL                                                                                  |
-| /feedback         | 游客，用户   | 用户向开发者发送反馈。需要先配置 FEEDBACK_URL                                                                           |
+| 命令              | 可用角色     | 说明                                                                                                                                          |
+| ----------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| /help             | 游客，用户   | 获取命令帮助信息                                                                                                                              |
+| /bindKey          | 游客，用户   | 绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 /testKey 命令测试是否正常可用                                    |
+| /unbindKey        | 用户         | 解绑 OpenAI api key                                                                                                                           |
+| /testKey          | 用户         | 调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量                                                                           |
+| /setChatType      | 用户，试用者 | 切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量                       |
+| /newChat          | 用户，试用者 | 清除之前的串聊历史记录，开始新的串聊                                                                                                          |
+| /retry            | 用户，试用者 | 根据 msgId 获取对应回答，回答只会保留 3 分钟。保留时间可通过 ANSWER_EXPIRES_MINUTES 配置                                                      |
+| ..                | 用户，试用者 | 重试上一个延迟的回答                                                                                                                          |
+| 。。              | 用户，试用者 | 重试上一个延迟的回答                                                                                                                          |
+| /bindSessionKey   | 游客，用户   | 绑定 OpenAI session key，可查看用量页面对 <https://api.openai.com/v1/usage> 的请求头获得，每次重新登陆原来的 session key 会失效，需要重新绑定 |
+| /unbindSessionKey | 用户         | 解绑 OpenAI session key                                                                                                                       |
+| /usage            | 用户         | 获取本月用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI api key 或 session key                                                             |
+| /freeUsage        | 用户         | 获取免费用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI session key                                                                        |
+| /system           | 用户，管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                                                  |
+| /faq              | 游客，用户   | 一些常见问题                                                                                                                                  |
+| /adminAuth        | 游客，用户   | 通过 token 认证成为管理员，避免每个平台配置 admin 用户 ID 的麻烦。需要先配置 ADMIN_AUTH_TOKEN                                                 |
+| /testAlarm        | 管理员       | 测试发送告警消息。需要先配置 ALARM_URL                                                                                                        |
+| /feedback         | 游客，用户   | 用户向开发者发送反馈。需要先配置 FEEDBACK_URL                                                                                                 |
 
 ## OpenAI 配置
 

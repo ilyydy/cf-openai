@@ -423,12 +423,12 @@ export abstract class Base<T extends Platform<PlatformType>> {
       fn: this.unbindKey.bind(this),
     },
     [commandName.usage]: {
-      description: `获取本月用量信息，可能有 5 分钟左右的延迟，需要先用命令 ${commandName.bindSessionKey} 进行绑定`,
+      description: `获取本月用量信息，可能有 5 分钟左右的延迟，需要绑定 api key 或 session key`,
       roles: [CONST.ROLE.USER],
       fn: this.getUsage.bind(this),
     },
     [commandName.freeUsage]: {
-      description: `获取免费用量信息，可能有 5 分钟左右的延迟，需要先用命令 ${commandName.bindSessionKey} 进行绑定`,
+      description: `获取免费用量信息，可能有 5 分钟左右的延迟，需要先用命令 ${commandName.bindSessionKey} 绑定 session key`,
       roles: [CONST.ROLE.USER],
       fn: this.getFreeUsage.bind(this),
     },
@@ -613,11 +613,16 @@ export abstract class Base<T extends Platform<PlatformType>> {
     const month = now.getUTCMonth() === 11 ? '01' : `${now.getUTCMonth() + 2}`
     const endDate = `${year}-${month.padStart(2, '0')}-01`
 
-    const keyRes = await this.getSessionKey()
-    if (!keyRes.success) {
-      return keyRes
+    // 用量接口目前两种 key 都可用，优先使用 api key
+    let key = this.ctx.apiKey
+    if (!key) {
+      const keyRes = await this.getSessionKey()
+      if (keyRes.success) {
+        key = keyRes.data
+      }
     }
-    const openAi = new OpenAiBrowserClient(keyRes.data, this.logger)
+
+    const openAi = new OpenAiBrowserClient(key, this.logger)
     const r = await openAi.getUsage(startDate, endDate)
     if (!r.success) {
       return genFail(`获取失败 ${r.msg}`)
