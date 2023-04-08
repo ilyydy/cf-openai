@@ -19,6 +19,7 @@ export const commandName = {
   system: '/system',
   faq: '/faq',
   adminAuth: '/adminAuth',
+  testAlarm: '/testAlarm',
   // TODO 发消息给开发者
 }
 

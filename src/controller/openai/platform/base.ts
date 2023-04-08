@@ -1,4 +1,4 @@
-import { genFail, genSuccess, buildLogger, errorToString, Result, mergeFromEnv } from '../../../utils'
+import { genFail, genSuccess, buildLogger, errorToString, sendAlarmMsg, mergeFromEnv } from '../../../utils'
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG, commandName } from '../config'
 import { OpenAiBrowserClient, OpenAiClient } from '../openAiClient'
@@ -459,6 +459,11 @@ export abstract class Base<T extends Platform<PlatformType>> {
       fn: this.adminAuth.bind(this),
       hidden: true, // 隐藏命令
     },
+    [commandName.testAlarm]: {
+      description: '测试发送告警消息',
+      roles: [CONST.ROLE.ADMIN],
+      fn: this.testAlarm.bind(this),
+    },
   }
 
   protected getHelpMsg(subcommand: string) {
@@ -682,6 +687,19 @@ export abstract class Base<T extends Platform<PlatformType>> {
     const setRes = await globalKV.setAdmin(this.platform.ctx.userId)
     if (!setRes.success) {
       return genFail(setRes.msg)
+    }
+
+    return genSuccess('成功')
+  }
+
+  protected async testAlarm(msg: string) {
+    if (!GLOBAL_CONFIG.ALARM_URL) {
+      return genFail('未配置告警地址')
+    }
+
+    const res = await sendAlarmMsg(msg)
+    if (!res.success) {
+      return res
     }
 
     return genSuccess('成功')

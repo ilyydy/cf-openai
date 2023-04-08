@@ -151,31 +151,38 @@ export function buildLogger(extraInfo: LogExtraInfo) {
 export type Logger = typeof logger
 
 /**
- * 发送告警信息到企业微信群机器人
+ * 发送告警信息，目前支持企业微信群机器人和自定义地址
  * TODO 支持其他
  * @see https://developer.work.weixin.qq.com/document/path/91770
- * @param msg
  */
 export async function sendAlarmMsg(msg: string) {
   if (!CONFIG.ALARM_URL) return genFail('未配置告警地址')
   try {
+    let body = {
+      msg,
+    } as Record<string, any>
+
+    if (CONFIG.ALARM_URL.startsWith('https://qyapi.weixin.qq.com/cgi-bin/webhook/send')) {
+      // 企业微信
+      body = {
+        msgtype: 'text',
+        text: { content: msg },
+      }
+    }
+
     const resp = await fetch(CONFIG.ALARM_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-
-      body: JSON.stringify({
-        msgtype: 'text',
-        text: { content: msg },
-      }),
+      body: JSON.stringify(body),
     }).then((res) => res.json())
-
+    logger.debug(`${MODULE} resp ${JSON.stringify(resp)}`)
     return genSuccess('')
   } catch (e) {
     const err = e as Error
-    logger.error(`${MODULE} 企业微信群机器人发送高级异常 ${errorToString(err)}`)
-    return genFail(`企业微信群机器人发送高级异常`)
+    logger.error(`${MODULE} 告警发送失败 ${errorToString(err)}`)
+    return genFail(`告警发送失败`)
   }
 }
 
