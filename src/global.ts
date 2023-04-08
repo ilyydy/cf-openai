@@ -39,6 +39,8 @@ export const CONFIG: GlobalConfig = {
   ECHO_MODE: false,
   // 告警 URL
   ALARM_URL: '',
+  // 用户反馈 URL
+  FEEDBACK_URL: '',
   // 认证为 admin 的 token
   ADMIN_AUTH_TOKEN: '',
   // 当前版本

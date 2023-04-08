@@ -11,11 +11,7 @@ const MODULE = 'src/utils.ts'
 /**
  * 重试方法
  */
-export async function retry<T>(
-  fn: () => T | Promise<T>,
-  maxAttemptCount: number,
-  retryInterval = 100
-) {
+export async function retry<T>(fn: () => T | Promise<T>, maxAttemptCount: number, retryInterval = 100) {
   let err: Error = new Error('retry fail')
   for (let i = 0; i < maxAttemptCount; i++) {
     try {
@@ -31,10 +27,7 @@ export async function retry<T>(
   throw err
 }
 
-export async function catchWithDefault<T, K>(
-  defaultValue: K,
-  fn: () => T | Promise<T>
-) {
+export async function catchWithDefault<T, K>(defaultValue: K, fn: () => T | Promise<T>) {
   try {
     const res = fn()
     if (res instanceof Promise) {
@@ -65,24 +58,15 @@ export type Result<SuccessData, FailData = undefined> =
 export const logger = {
   debug: (msg: string) => {
     if (CONFIG.DEBUG_MODE) {
-      console.log(
-        `${new Date(Date.now() + 8 * 3600000).toISOString()} DEBUG ${msg}`
-      )
+      console.log(`${new Date(Date.now() + 8 * 3600000).toISOString()} DEBUG ${msg}`)
     }
   },
-  info: (msg: string) =>
-    console.log(
-      `${new Date(Date.now() + 8 * 3600000).toISOString()} INFO ${msg}`
-    ),
+  info: (msg: string) => console.log(`${new Date(Date.now() + 8 * 3600000).toISOString()} INFO ${msg}`),
   error: (msg: string) => {
-    const _msg = `${new Date(
-      Date.now() + 8 * 3600000
-    ).toISOString()} ERROR ${msg}`
+    const _msg = `${new Date(Date.now() + 8 * 3600000).toISOString()} ERROR ${msg}`
     console.log(_msg)
-    sendAlarmMsg(_msg).catch((error) => {
-      console.error(
-        `${MODULE} sendAlarmMsg fail ${errorToString(error as Error)}`
-      )
+    sendAlarmMsg(_msg, CONFIG.ALARM_URL).catch((error) => {
+      console.error(`${MODULE} sendAlarmMsg fail ${errorToString(error as Error)}`)
     })
   },
 }
@@ -155,8 +139,7 @@ export type Logger = typeof logger
  * TODO 支持其他
  * @see https://developer.work.weixin.qq.com/document/path/91770
  */
-export async function sendAlarmMsg(msg: string) {
-  if (!CONFIG.ALARM_URL) return genFail('未配置告警地址')
+export async function sendAlarmMsg(msg: string, url: string) {
   try {
     let body = {
       msg,
@@ -170,7 +153,7 @@ export async function sendAlarmMsg(msg: string) {
       }
     }
 
-    const resp = await fetch(CONFIG.ALARM_URL, {
+    const resp = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -190,10 +173,7 @@ export async function sendAlarmMsg(msg: string) {
  * @returns hex 字符串
  */
 export async function shaDigest(algorithm: SHA, input: string) {
-  const buffer = await crypto.subtle.digest(
-    algorithm,
-    new TextEncoder().encode(input)
-  )
+  const buffer = await crypto.subtle.digest(algorithm, new TextEncoder().encode(input))
 
   return Array.from(new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, '0'))

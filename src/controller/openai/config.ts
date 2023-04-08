@@ -20,7 +20,7 @@ export const commandName = {
   faq: '/faq',
   adminAuth: '/adminAuth',
   testAlarm: '/testAlarm',
-  // TODO 发消息给开发者
+  feedback: '/feedback',
 }
 
 export const CONFIG: OpenAiConfig = {

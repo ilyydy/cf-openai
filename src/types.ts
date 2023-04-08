@@ -5,6 +5,8 @@ export interface GlobalConfig {
   ECHO_MODE: boolean
   // 告警 URL
   ALARM_URL: string
+  // 用户反馈 URL
+  FEEDBACK_URL: string
   // 认证为 admin 的 token
   ADMIN_AUTH_TOKEN: string
   // 当前版本创建时间

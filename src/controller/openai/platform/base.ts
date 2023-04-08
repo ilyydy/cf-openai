@@ -464,6 +464,12 @@ export abstract class Base<T extends Platform<PlatformType>> {
       roles: [CONST.ROLE.ADMIN],
       fn: this.testAlarm.bind(this),
     },
+    [commandName.feedback]: {
+      description: '向开发者提出建议和反馈问题',
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
+      fn: this.feedback.bind(this),
+      hidden: !GLOBAL_CONFIG.FEEDBACK_URL,
+    },
   }
 
   protected getHelpMsg(subcommand: string) {
@@ -697,12 +703,25 @@ export abstract class Base<T extends Platform<PlatformType>> {
       return genFail('未配置告警地址')
     }
 
-    const res = await sendAlarmMsg(msg)
+    const res = await sendAlarmMsg(msg, GLOBAL_CONFIG.ALARM_URL)
     if (!res.success) {
       return res
     }
 
     return genSuccess('成功')
+  }
+
+  protected async feedback(msg: string) {
+    if (!GLOBAL_CONFIG.FEEDBACK_URL) {
+      return genFail('开发者未开启此功能')
+    }
+
+    const res = await sendAlarmMsg(`【用户反馈 ${this.platform.ctx.userId}】 ${msg}`, GLOBAL_CONFIG.FEEDBACK_URL)
+    if (!res.success) {
+      return res
+    }
+
+    return genSuccess('已收到，谢谢反馈')
   }
 
   protected async handleCommandMessage(message: string) {
