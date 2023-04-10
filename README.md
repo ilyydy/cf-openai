@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/ilyydy/cf-openai/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/ilyydy/cf-openai/actions/workflows/github-code-scanning/codeql)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 
-基于 Cloudflare Worker 代理访问 OpenAI API 的服务，目前支持企业微信应用、微信公众号接入
+基于 Cloudflare Worker 代理访问 [OpenAI](https://platform.openai.com/docs/api-reference)/[AzureOpenAI](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/) API 的服务，目前支持企业微信应用、微信公众号接入
 
 - [cf-openai](#cf-openai)
   - [基本要求](#基本要求)
@@ -22,7 +22,7 @@
 
 ## 基本要求
 
-- 注册 OpenAI 账号，创建复制 API key
+- 注册 OpenAI 账号，创建复制 API key，或注册 Azure 账号，创建资源并部署模型
 - 注册 Cloudflare 账号，关于 [免费用量](<https://developers.cloudflare.com/workers/platform/limits/>)
 - 国内服务接入还需要一个国内直接能访问的域名
 
