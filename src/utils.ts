@@ -84,6 +84,7 @@ export interface LogExtraInfo {
   id?: string
   userId?: string
   role?: string
+  openaiType?: string
   chatType?: string
   conversationId?: string
   reqId?: string
@@ -106,6 +107,10 @@ export function wrapLogMsg(msg: string, extraInfo: LogExtraInfo = {}) {
 
   if (extraInfo.role) {
     arr.push(`[role ${extraInfo.role}]`)
+  }
+
+  if (extraInfo.openaiType) {
+    arr.push(`[openaiType ${extraInfo.openaiType}]`)
   }
 
   if (extraInfo.chatType) {

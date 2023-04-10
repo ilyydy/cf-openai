@@ -2,6 +2,7 @@ import { genFail, genSuccess, buildLogger, errorToString, sendAlarmMsg, mergeFro
 import { CONST, CONFIG as GLOBAL_CONFIG } from '../../../global'
 import { CONFIG, commandName } from '../config'
 import { OpenAiBrowserClient, OpenAiClient } from '../openAiClient'
+import { AzureOpenAiClient } from '../azureOpenAiClient'
 import * as globalKV from '../../../kv'
 import { estimateTokenCount, getApiKeyWithMask, getTextWithMask } from '../utils'
 import { platformMap } from '../../../platform'
@@ -10,7 +11,7 @@ import type openai from 'openai'
 import type { Role } from '../../../global'
 import type { MyRequest, MyResponse } from '../../../types'
 import type { Platform, PlatformType } from '../../../platform/types'
-import type { ChatType, ChatMsg, HistoryMsg } from '../types'
+import type { ChatType, ChatMsg, HistoryMsg, OpenAiType } from '../types'
 import type { Logger } from '../../../utils'
 
 const MODULE = 'src/openai/platform/base.ts'
@@ -21,6 +22,8 @@ export const defaultCtx = {
   chatType: '单聊' as ChatType,
   conversationId: '',
   isRequestOpenAi: false, // 收到的消息是命令还是请求 OpenAI
+  azureKey: '', // azureResourceName:azureResourceName:azureApiKey
+  openaiType: 'openai' as OpenAiType,
 }
 
 export abstract class Base<T extends Platform<PlatformType>> {
@@ -42,7 +45,12 @@ export abstract class Base<T extends Platform<PlatformType>> {
   abstract handleRequest(): Promise<MyResponse>
 
   async openAiHandle(msgContent: string, msgId: string, msgTokenCount: number) {
-    const openAi = new OpenAiClient(this.ctx.apiKey, this.logger)
+    const { apiKey } = this.ctx
+
+    const openAi =
+      this.ctx.openaiType === 'openai'
+        ? new OpenAiClient(apiKey, this.logger)
+        : new AzureOpenAiClient(apiKey, this.logger)
 
     const respMsg = await this.openAiChat(openAi, msgContent, msgId, msgTokenCount)
     return respMsg
@@ -51,7 +59,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
   /**
    * 调用 OpenAI completion 接口，目前未用到
    */
-  async openAiCompletion(openai: OpenAiClient, msgContent: string) {
+  async openAiCompletion(openai: OpenAiClient | AzureOpenAiClient, msgContent: string) {
     const r = await openai.createCompletion(msgContent)
     if (!r.success) {
       return r.msg
@@ -66,7 +74,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
   /**
    * 调用 OpenAI chat 接口
    */
-  async openAiChat(openai: OpenAiClient, msgContent: string, msgId: string, msgTokenCount: number) {
+  async openAiChat(openai: OpenAiClient | AzureOpenAiClient, msgContent: string, msgId: string, msgTokenCount: number) {
     // 根据 msgId 看是否收到过，一般是平台发起的重试
     const kvPrompt = this.kvPrompt(msgId)
     await kvPrompt.set(msgContent)
@@ -336,8 +344,10 @@ export abstract class Base<T extends Platform<PlatformType>> {
     globalKV.KeyBuilder.of('openai', part, this.platform.ctx.platform, this.platform.id, this.platform.ctx.userId)
 
   protected kvUserDimension = <T = string>(part: string) => globalKV.createObj<T>(this.kvUserDimensionKey(part).key)
+  protected kvOpenAiType = () => this.kvUserDimension<OpenAiType>('openAiType')
   protected kvApiKey = () => this.kvUserDimension('apiKey')
   protected kvSessionKey = () => this.kvUserDimension('sessionKey')
+  protected kvAzureKey = () => this.kvUserDimension('azureKey')
   protected kvChatType = () => this.kvUserDimension<ChatType>('chatType')
   protected kvLastChatPrompt = () => this.kvUserDimension<ChatMsg>('lastChatPrompt')
   protected kvLastChatAnswer = () => this.kvUserDimension<ChatMsg>('lastChatAnswer')
@@ -371,6 +381,11 @@ export abstract class Base<T extends Platform<PlatformType>> {
       roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
       fn: this.getHelpMsg.bind(this),
     },
+    [commandName.setOpenAiType]: {
+      description: '设置使用 openAi 还是 azureOpenAi，默认使用 openAi',
+      roles: [CONST.ROLE.USER, CONST.ROLE.FREE_TRIAL],
+      fn: this.setOpenAiType.bind(this),
+    },
     [commandName.bindKey]: {
       description: `绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。刚绑定后的 1 分钟由于不同节点需要时间数据同步，可能出现提示未绑定，请稍等再试。可以先用 ${commandName.testKey} 命令测试是否正常可用`,
       roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
@@ -381,8 +396,18 @@ export abstract class Base<T extends Platform<PlatformType>> {
       roles: [CONST.ROLE.USER],
       fn: this.unbindKey.bind(this),
     },
+    [commandName.bindAzureKey]: {
+      description: `绑定 AzureOpenAI key，格式如 /bindAzureKey yourResourceName:yourDeploymentName:yourApiKey。如已绑定 key，则会覆盖。刚绑定后的 1 分钟由于不同节点需要时间数据同步，可能出现提示未绑定，请稍等再试。可以先用 ${commandName.testKey} 命令测试是否正常可用`,
+      roles: [CONST.ROLE.GUEST, CONST.ROLE.USER],
+      fn: this.bindAzureKey.bind(this),
+    },
+    [commandName.unbindAzureKey]: {
+      description: '解绑 AzureOpenAI key',
+      roles: [CONST.ROLE.USER],
+      fn: this.unbindAzureKey.bind(this),
+    },
     [commandName.testKey]: {
-      description: '调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量',
+      description: '调用 OpenAI/AzureOpenAI 列出模型接口，测试 key 是否正常绑定可用，不消耗用量',
       roles: [CONST.ROLE.USER],
       fn: this.testKey.bind(this),
     },
@@ -423,12 +448,12 @@ export abstract class Base<T extends Platform<PlatformType>> {
       fn: this.unbindKey.bind(this),
     },
     [commandName.usage]: {
-      description: `获取本月用量信息，可能有 5 分钟左右的延迟，需要绑定 api key 或 session key`,
+      description: `获取本月用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI api key 或 OpenAI session key`,
       roles: [CONST.ROLE.USER],
       fn: this.getUsage.bind(this),
     },
     [commandName.freeUsage]: {
-      description: `获取免费用量信息，可能有 5 分钟左右的延迟，需要先用命令 ${commandName.bindSessionKey} 绑定 session key`,
+      description: `获取免费用量信息，可能有 5 分钟左右的延迟，需要先用命令 ${commandName.bindSessionKey} 绑定 OpenAI session key`,
       roles: [CONST.ROLE.USER],
       fn: this.getFreeUsage.bind(this),
     },
@@ -497,6 +522,20 @@ export abstract class Base<T extends Platform<PlatformType>> {
     return genSuccess(msg)
   }
 
+  protected async setOpenAiType(params: string) {
+    const type = params.toLowerCase()
+    if (type !== 'openai' && type !== 'azureopenai') {
+      return genFail(`输入不合法，应输入'openAi'或'azureOpenAi'(可忽略大小写)，请重新输入`)
+    }
+
+    const r = await this.kvOpenAiType().setWithExpireMetaData(type)
+    if (!r.success) {
+      return genFail(`切换失败 ${r.msg}`)
+    }
+
+    return genSuccess(`切换为'${params}'成功`)
+  }
+
   protected async bindKey(key: string) {
     if (
       typeof key !== 'string' ||
@@ -520,8 +559,37 @@ export abstract class Base<T extends Platform<PlatformType>> {
     return genSuccess('解绑成功')
   }
 
+  protected async bindAzureKey(key: string) {
+    if (typeof key !== 'string') {
+      return genFail(`绑定失败 key 格式不合法`)
+    }
+    const l = key.split(':')
+    if (l.length !== 3 || l.some((i) => !i.trim())) {
+      return genFail(`绑定失败 key 格式不合法`)
+    }
+    const r = await this.kvAzureKey().setWithExpireMetaData(key.trim())
+    if (!r.success) {
+      return genFail(`绑定失败 ${r.msg}`)
+    }
+    return genSuccess('绑定成功')
+  }
+
+  protected async unbindAzureKey(params: any) {
+    const r = await this.kvAzureKey().del()
+    if (!r.success) {
+      return genFail(`解绑失败 ${r.msg}`)
+    }
+    return genSuccess('解绑成功')
+  }
+
   protected async testKey(params: any) {
-    const openAi = new OpenAiClient(this.ctx.apiKey, this.logger)
+    const { apiKey } = this.ctx
+
+    const openAi =
+      this.ctx.openaiType === 'openai'
+        ? new OpenAiClient(apiKey, this.logger)
+        : new AzureOpenAiClient(apiKey, this.logger)
+
     const r = await openAi.listModels()
     if (!r.success) {
       return genFail(`测试失败 ${r.msg}`)
@@ -647,7 +715,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
 
   protected async commandSystem(params: any) {
     const { platform, userId, appid } = this.platform.ctx
-    const { apiKey, conversationId, chatType, role } = this.ctx
+    const { apiKey, conversationId, chatType, role, openaiType } = this.ctx
     const isAdmin = role.has(CONST.ROLE.ADMIN)
 
     const sessionKeyRes = await this.kvSessionKey().getWithExpireRefresh()
@@ -657,11 +725,31 @@ export abstract class Base<T extends Platform<PlatformType>> {
         : '未绑定'
       : '获取失败'
 
+    let openaiAPiKey = '未绑定'
+    let azureOpenKey = '未绑定'
+    if (openaiType === 'azureopenai') {
+      azureOpenKey = apiKey
+      const res = await this.kvApiKey().getWithExpireRefresh()
+      openaiAPiKey = res.success ? (res.data ? getTextWithMask(res.data) : '未绑定') : '获取失败'
+    } else {
+      openaiAPiKey = getTextWithMask(apiKey)
+      const res = await this.kvAzureKey().getWithExpireRefresh()
+      azureOpenKey = res.success ? (res.data ? res.data : '未绑定') : '获取失败'
+    }
+
+    if (azureOpenKey !== '未绑定' && azureOpenKey !== '获取失败') {
+      const idx = azureOpenKey.lastIndexOf(':')
+      const _apiKey = azureOpenKey.slice(idx + 1)
+      azureOpenKey = `${azureOpenKey.slice(0, idx)}:${getTextWithMask(_apiKey)}`
+    }
+
     const msgList = [
       '当前系统信息如下: ',
+      `⭐OpenAI 类型: ${openaiType}`,
       `⭐OpenAI 模型: ${CONFIG.CHAT_MODEL}`,
-      `⭐OpenAI api key: ${getApiKeyWithMask(apiKey)}`,
+      `⭐OpenAI api key: ${openaiAPiKey}`,
       `⭐OpenAI session key: ${sessionKey}`,
+      `⭐AzureOpenAI key: ${azureOpenKey}`,
       `⭐OpenAI 对话模式: ${chatType}`,
       `⭐当前用户: ${isAdmin ? userId : getTextWithMask(userId)}`,
     ]
@@ -766,6 +854,8 @@ export abstract class Base<T extends Platform<PlatformType>> {
       userId: this.platform.ctx.userId,
       role: Array.from(this.ctx.role).join(','),
       chatType: this.ctx.chatType,
+      conversationId: this.ctx.conversationId,
+      openaiType: this.ctx.openaiType,
     })
     this.platform.logger = logger
     this.logger = logger
