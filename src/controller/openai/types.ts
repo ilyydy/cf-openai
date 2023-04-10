@@ -14,3 +14,5 @@ export interface HistoryMsg {
   role: openai.ChatCompletionRequestMessageRoleEnum
   tokenNum: number
 }
+
+export type OpenAiType = 'openai' | 'azureopenai'

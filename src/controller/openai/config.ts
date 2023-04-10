@@ -2,8 +2,11 @@ import type { OpenAiConfig } from '../../types'
 
 export const commandName = {
   help: '/help',
+  setOpenAiType: '/setOpenAiType',
   bindKey: '/bindKey',
   unbindKey: '/unbindKey',
+  bindAzureKey: '/bindAzureKey',
+  unbindAzureKey: '/unbindAzureKey',
   testKey: '/testKey',
   setChatType: '/setChatType',
   newChat: '/newChat',
@@ -57,4 +60,10 @@ export const CONFIG: OpenAiConfig = {
   SYSTEM_INIT_MESSAGE: `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023`,
   // 用户关注应用时发出的欢迎信息
   WELCOME_MESSAGE: `欢迎使用，可输入 ${commandName.help} 查看当前可用命令`,
+
+  AZURE_API_PREFIX: 'https://RESOURCENAME.openai.azure.com/openai',
+  AZURE_CHAT_API_VERSION: '2023-03-15-preview',
+  AZURE_LIST_MODEL_API_VERSION: '2022-12-01',
+  AZURE_GUEST_KEY: '',
+  AZURE_ADMIN_KEY: '',
 }

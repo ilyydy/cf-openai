@@ -13,7 +13,13 @@ export class WeWorkHandler extends WeChatBaseHandler<WeWork> {
     const { platform, appid, userId, adminUserIdList } = this.platform.ctx
     const { role } = this.ctx
 
-    const apiKeyRes = await this.kvApiKey().getWithExpireRefresh()
+    const initRes = await this.commonInit()
+    if (initRes) return initRes
+
+    const isOpenAi = this.ctx.openaiType === 'openai'
+    const apiKeyRes = isOpenAi
+      ? await this.kvApiKey().getWithExpireRefresh()
+      : await this.kvAzureKey().getWithExpireRefresh()
     if (!apiKeyRes.success) {
       this.logger.debug(`${MODULE} 获取 api key 失败`)
       return '服务异常'
@@ -24,8 +30,9 @@ export class WeWorkHandler extends WeChatBaseHandler<WeWork> {
       role.add(CONST.ROLE.ADMIN)
     }
 
-    const globalAdminOpenAiKey = OPENAI_CONFIG.ADMIN_KEY
-    const globalGuestOpenAiKey = OPENAI_CONFIG.GUEST_KEY
+    const [globalAdminOpenAiKey, globalGuestOpenAiKey] = isOpenAi
+      ? [OPENAI_CONFIG.ADMIN_KEY, OPENAI_CONFIG.GUEST_KEY]
+      : [OPENAI_CONFIG.AZURE_ADMIN_KEY, OPENAI_CONFIG.AZURE_GUEST_KEY]
 
     // 先用自己的 key
     if (apiKeyRes.data) {
@@ -43,7 +50,5 @@ export class WeWorkHandler extends WeChatBaseHandler<WeWork> {
       this.logger.debug(`${MODULE} 没有 api key`)
       return
     }
-
-    return this.initChatType()
   }
 }

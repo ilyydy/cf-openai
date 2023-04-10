@@ -29,6 +29,24 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
     }
   }
 
+  async initOpenAiType() {
+    const openaiTypeRes = await this.kvOpenAiType().getWithExpireRefresh()
+    if (!openaiTypeRes.success) {
+      this.logger.debug(`${MODULE} 获取聊天类型失败`)
+      return '服务异常'
+    }
+    if (openaiTypeRes.data) {
+      this.ctx.openaiType = openaiTypeRes.data
+    }
+  }
+
+  async commonInit() {
+    const r = await Promise.all([this.initChatType(), this.initOpenAiType()])
+    for (const i of r) {
+      if (i) return i
+    }
+  }
+
   async handleRequest() {
     return this.platform.handleRequest(this.handleRecvData.bind(this), async () => {
       const { recvData } = this.platform.ctx

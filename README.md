@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/ilyydy/cf-openai/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/ilyydy/cf-openai/actions/workflows/github-code-scanning/codeql)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 
-基于 Cloudflare Worker 代理访问 OpenAI API 的服务，目前支持企业微信应用、微信公众号接入
+基于 Cloudflare Worker 代理访问 [OpenAI](https://platform.openai.com/docs/api-reference)/[AzureOpenAI](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/) API 的服务，目前支持企业微信应用、微信公众号接入
 
 - [cf-openai](#cf-openai)
   - [基本要求](#基本要求)
@@ -22,7 +22,7 @@
 
 ## 基本要求
 
-- 注册 OpenAI 账号，创建复制 API key
+- 注册 OpenAI 账号，创建复制 API key，或注册 Azure 账号，创建资源并部署模型
 - 注册 Cloudflare 账号，关于 [免费用量](<https://developers.cloudflare.com/workers/platform/limits/>)
 - 国内服务接入还需要一个国内直接能访问的域名
 
@@ -102,26 +102,29 @@
 
 输入使用时可忽略大小写
 
-| 命令              | 可用角色     | 说明                                                                                                                                          |
-| ----------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| /help             | 游客，用户   | 获取命令帮助信息                                                                                                                              |
-| /bindKey          | 游客，用户   | 绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 /testKey 命令测试是否正常可用                                    |
-| /unbindKey        | 用户         | 解绑 OpenAI api key                                                                                                                           |
-| /testKey          | 用户         | 调用 OpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量                                                                           |
-| /setChatType      | 用户，试用者 | 切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量                       |
-| /newChat          | 用户，试用者 | 清除之前的串聊历史记录，开始新的串聊                                                                                                          |
-| /retry            | 用户，试用者 | 根据 msgId 获取对应回答，回答只会保留 3 分钟。保留时间可通过 ANSWER_EXPIRES_MINUTES 配置                                                      |
-| ..                | 用户，试用者 | 重试上一个延迟的回答                                                                                                                          |
-| 。。              | 用户，试用者 | 重试上一个延迟的回答                                                                                                                          |
-| /bindSessionKey   | 游客，用户   | 绑定 OpenAI session key，可查看用量页面对 <https://api.openai.com/v1/usage> 的请求头获得，每次重新登陆原来的 session key 会失效，需要重新绑定 |
-| /unbindSessionKey | 用户         | 解绑 OpenAI session key                                                                                                                       |
-| /usage            | 用户         | 获取本月用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI api key 或 session key                                                             |
-| /freeUsage        | 用户         | 获取免费用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI session key                                                                        |
-| /system           | 用户，管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                                                  |
-| /faq              | 游客，用户   | 一些常见问题                                                                                                                                  |
-| /adminAuth        | 游客，用户   | 通过 token 认证成为管理员，避免每个平台配置 admin 用户 ID 的麻烦。需要先配置 ADMIN_AUTH_TOKEN                                                 |
-| /testAlarm        | 管理员       | 测试发送告警消息。需要先配置 ALARM_URL                                                                                                        |
-| /feedback         | 游客，用户   | 用户向开发者发送反馈。需要先配置 FEEDBACK_URL                                                                                                 |
+| 命令              | 可用角色     | 说明                                                                                                                                                        |
+| ----------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| /help             | 游客，用户   | 获取命令帮助信息                                                                                                                                            |
+| /setOpenAiType    | 游客，用户   | 设置使用 openAi 还是 azureOpenAi，默认使用 openAi                                                                                                           |
+| /bindKey          | 游客，用户   | 绑定 OpenAI api key，格式如 /bindKey xxx。如已绑定 key，则会覆盖。绑定后先用 /testKey 命令测试是否正常可用                                                  |
+| /unbindKey        | 用户         | 解绑 OpenAI api key                                                                                                                                         |
+| /bindAzureKey     | 游客，用户   | 绑定 AzureOpenAI key，格式如 /bindAzureKey yourResourceName:yourDeploymentName:yourApiKey。如已绑定 key，则会覆盖。绑定后先用 /testKey 命令测试是否正常可用 |
+| /unbindAzureKey   | 用户         | 解绑 AzureOpenAI api key                                                                                                                                    |
+| /testKey          | 用户         | 调用 OpenAI/AzureOpenAI 列出模型接口，测试 api key 是否正常绑定可用，不消耗用量                                                                             |
+| /setChatType      | 用户，试用者 | 切换对话模式，可选'单聊'和'串聊'，默认'单聊'。'单聊'只处理当前的输入，'串聊'会带上历史聊天记录请求 OpenAI，消耗更多用量                                     |
+| /newChat          | 用户，试用者 | 清除之前的串聊历史记录，开始新的串聊                                                                                                                        |
+| /retry            | 用户，试用者 | 根据 msgId 获取对应回答，回答只会保留 3 分钟。保留时间可通过 ANSWER_EXPIRES_MINUTES 配置                                                                    |
+| ..                | 用户，试用者 | 重试上一个延迟的回答                                                                                                                                        |
+| 。。              | 用户，试用者 | 重试上一个延迟的回答                                                                                                                                        |
+| /bindSessionKey   | 游客，用户   | 绑定 OpenAI session key，可查看用量页面对 <https://api.openai.com/v1/usage> 的请求头获得，每次重新登陆原来的 session key 会失效，需要重新绑定               |
+| /unbindSessionKey | 用户         | 解绑 OpenAI session key                                                                                                                                     |
+| /usage            | 用户         | 获取本月用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI api key 或 session key                                                                           |
+| /freeUsage        | 用户         | 获取免费用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI session key                                                                                      |
+| /system           | 用户，管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                                                                |
+| /faq              | 游客，用户   | 一些常见问题                                                                                                                                                |
+| /adminAuth        | 游客，用户   | 通过 token 认证成为管理员，避免每个平台配置 admin 用户 ID 的麻烦。需要先配置 ADMIN_AUTH_TOKEN                                                               |
+| /testAlarm        | 管理员       | 测试发送告警消息。需要先配置 ALARM_URL                                                                                                                      |
+| /feedback         | 游客，用户   | 用户向开发者发送反馈。需要先配置 FEEDBACK_URL                                                                                                               |
 
 ## OpenAI 配置
 
@@ -141,6 +144,11 @@
 | ANSWER_EXPIRES_MINUTES             | 3                                                                                                                                         | 提问/回答的保存时长，分钟                                                                                           |
 | SYSTEM_INIT_MESSAGE                | You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: 2021-09-01. Current is 2023 | 发给 OpenAI 的默认第一条系统消息，可用于调整模型                                                                    |
 | WELCOME_MESSAGE                    | 欢迎使用，可输入 /help 查看当前可用命令                                                                                                   | 用户关注应用时发出的欢迎信息                                                                                        |
+| AZURE_API_PREFIX                   | `https://RESOURCENAME.openai.azure.com/openai`                                                                                            | Azure OpenAI 通过请求前缀                                                                                           |
+| AZURE_CHAT_API_VERSION             | 2023-03-15-preview                                                                                                                        | 聊天接口 API 版本                                                                                                   |
+| AZURE_LIST_MODEL_API_VERSION       | 2022-12-01                                                                                                                                | 列举模型接口 API 版本                                                                                               |
+| AZURE_GUEST_KEY                    |                                                                                                                                           | 可选，游客的默认 azure openai key，可被随意使用，跨平台起效，谨慎配置！                                             |
+| AZURE_ADMIN_KEY                    |                                                                                                                                           | 可选，admin 用户的默认 azure openai key，跨平台起效                                                                 |
 
 ## 全局配置
 

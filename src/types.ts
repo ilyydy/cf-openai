@@ -95,6 +95,12 @@ export interface OpenAiConfig {
   SYSTEM_INIT_MESSAGE: string
   // 用户关注应用时发出的欢迎信息
   WELCOME_MESSAGE: string
+
+  AZURE_API_PREFIX: string
+  AZURE_CHAT_API_VERSION: string
+  AZURE_LIST_MODEL_API_VERSION: string
+  AZURE_GUEST_KEY: string
+  AZURE_ADMIN_KEY: string
 }
 
 export interface Env

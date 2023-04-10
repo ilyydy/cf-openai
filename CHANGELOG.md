@@ -1,3 +1,12 @@
+# [0.3.0](https://github.com/ilyydy/cf-openai/compare/v0.2.1...v0.3.0) (2023-04-10)
+
+
+### Features
+
+* 支持 azure openai ([0e6fd4b](https://github.com/ilyydy/cf-openai/commit/0e6fd4b0e9119a8fef621bd8f915badcc022085e))
+
+
+
 ## [0.2.1](https://github.com/ilyydy/cf-openai/compare/v0.2.0...v0.2.1) (2023-04-08)
 
 
