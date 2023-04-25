@@ -488,6 +488,7 @@ export abstract class Base<T extends Platform<PlatformType>> {
       description: '测试发送告警消息',
       roles: [CONST.ROLE.ADMIN],
       fn: this.testAlarm.bind(this),
+      hidden: true, // 隐藏命令
     },
     [commandName.feedback]: {
       description: '向开发者提出建议和反馈问题',

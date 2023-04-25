@@ -128,8 +128,8 @@
 | /freeUsage        | 用户         | 获取免费用量信息，可能有 5 分钟左右的延迟，需要绑定 OpenAI session key                                                                                      |
 | /system           | 用户，管理员 | 查看当前一些系统配置信息，如当前 OpenAI 模型，当前用户 ID 等                                                                                                |
 | /faq              | 游客，用户   | 一些常见问题                                                                                                                                                |
-| /adminAuth        | 游客，用户   | 通过 token 认证成为管理员，避免每个平台配置 admin 用户 ID 的麻烦。需要先配置 ADMIN_AUTH_TOKEN                                                               |
-| /testAlarm        | 管理员       | 测试发送告警消息。需要先配置 ALARM_URL                                                                                                                      |
+| /adminAuth        | 游客，用户   | 隐藏命令，通过 token 认证成为管理员，避免每个平台配置 admin 用户 ID 的麻烦。需要先配置 ADMIN_AUTH_TOKEN                                                               |
+| /testAlarm        | 管理员       | 隐藏命令，测试发送告警消息。需要先配置 ALARM_URL                                                                                                                      |
 | /feedback         | 游客，用户   | 用户向开发者发送反馈。需要先配置 FEEDBACK_URL                                                                                                               |
 
 ## OpenAI 配置
