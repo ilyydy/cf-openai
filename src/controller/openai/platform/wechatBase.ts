@@ -88,11 +88,19 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
    * 处理微信发来的消息，返回明文消息
    */
   async _handleRecvMsg(recvMsg: wechatType.RecvPlainMsg | weworkType.RecvPlainMsg) {
-    if (recvMsg.MsgType !== 'text') {
-      return this.platform.genRespTextXmlMsg('只支持文字消息')
+    let content = ''
+    if (recvMsg.MsgType === 'text') {
+      content = recvMsg.Content.trim()
+    } else if (recvMsg.MsgType === 'voice') {
+      if (!recvMsg.Recognition) {
+        return this.platform.genRespTextXmlMsg('微信公众号未开通语音识别')
+      }
+      content = recvMsg.Recognition.trim()
+    } else {
+      return this.platform.genRespTextXmlMsg('只支持文字/语音消息')
     }
-    recvMsg.Content = recvMsg.Content.trim()
-    const recvMsgTokenCount = estimateTokenCount(recvMsg.Content)
+
+    const recvMsgTokenCount = estimateTokenCount(content)
     if (recvMsgTokenCount >= CONFIG.MAX_CHAT_TOKEN_NUM) {
       return this.platform.genRespTextXmlMsg('输入太长，不能多于约 2000 个汉字')
     }
@@ -104,10 +112,10 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
     this.resetLogger()
 
     if (GLOBAL_CONFIG.ECHO_MODE) {
-      return this.platform.genRespTextXmlMsg(recvMsg.Content)
+      return this.platform.genRespTextXmlMsg(content)
     }
 
-    const cmdRes = await this.handleCommandMessage(recvMsg.Content)
+    const cmdRes = await this.handleCommandMessage(content)
     if (cmdRes !== null) {
       return cmdRes.success ? this.platform.genRespTextXmlMsg(cmdRes.data) : this.platform.genRespTextXmlMsg(cmdRes.msg)
     }
@@ -163,7 +171,7 @@ export abstract class WeChatBaseHandler<T extends WeWork | WeChat> extends Base<
     }
 
     this.request.ctx.waitUntil(kvMsgTryTimes.setWithStringify(1))
-    const respMsg = await this.openAiHandle(recvMsg.Content, recvMsg.MsgId, recvMsgTokenCount)
+    const respMsg = await this.openAiHandle(content, recvMsg.MsgId, recvMsgTokenCount)
     return this.platform.genRespTextXmlMsg(respMsg)
   }
 

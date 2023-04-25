@@ -1,3 +1,12 @@
+# [0.4.0](https://github.com/ilyydy/cf-openai/compare/v0.3.0...v0.4.0) (2023-04-25)
+
+
+### Features
+
+* 微信公众号支持语音消息 ([6726dac](https://github.com/ilyydy/cf-openai/commit/6726dacc9b65d8f7b43e347678c7f89cbced1f87))
+
+
+
 # [0.3.0](https://github.com/ilyydy/cf-openai/compare/v0.2.1...v0.3.0) (2023-04-10)
 
 
