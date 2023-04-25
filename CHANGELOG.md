@@ -1,3 +1,12 @@
+## [0.4.1](https://github.com/ilyydy/cf-openai/compare/v0.4.0...v0.4.1) (2023-04-25)
+
+
+### Bug Fixes
+
+* testAlarm 隐藏命令 ([523f0ac](https://github.com/ilyydy/cf-openai/commit/523f0ac6b13533253e29a97795e4598885f196b5))
+
+
+
 # [0.4.0](https://github.com/ilyydy/cf-openai/compare/v0.3.0...v0.4.0) (2023-04-25)
 
 
