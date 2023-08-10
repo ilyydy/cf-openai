@@ -1,3 +1,11 @@
+## [0.4.2](https://github.com/ilyydy/cf-openai/compare/v0.4.1...v0.4.2) (2023-08-10)
+
+
+### Features
+
+* debug模式发送所有消息 ([9c19262](https://github.com/ilyydy/cf-openai/commit/9c192624212ac0dfafd03cd743018b94f848d4f0))
+
+
 ## [0.4.1](https://github.com/ilyydy/cf-openai/compare/v0.4.0...v0.4.1) (2023-04-25)
 
 
