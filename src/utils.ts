@@ -58,10 +58,22 @@ export type Result<SuccessData, FailData = undefined> =
 export const logger = {
   debug: (msg: string) => {
     if (CONFIG.DEBUG_MODE) {
-      console.log(`${new Date(Date.now() + 8 * 3600000).toISOString()} DEBUG ${msg}`)
+      const _msg = `${new Date(Date.now() + 8 * 3600000).toISOString()} DEBUG ${msg}`
+      console.log(_msg)
+      sendAlarmMsg(_msg, CONFIG.ALARM_URL).catch((error) => {
+        console.error(`${MODULE} sendAlarmMsg fail ${errorToString(error as Error)}`)
+      })
     }
   },
-  info: (msg: string) => console.log(`${new Date(Date.now() + 8 * 3600000).toISOString()} INFO ${msg}`),
+  info: (msg: string) => {
+    const _msg = `${new Date(Date.now() + 8 * 3600000).toISOString()} INFO ${msg}`
+    console.log(_msg)
+    if (CONFIG.DEBUG_MODE) {
+      sendAlarmMsg(_msg, CONFIG.ALARM_URL).catch((error) => {
+        console.error(`${MODULE} sendAlarmMsg fail ${errorToString(error as Error)}`)
+      })
+    }
+  },
   error: (msg: string) => {
     const _msg = `${new Date(Date.now() + 8 * 3600000).toISOString()} ERROR ${msg}`
     console.log(_msg)
