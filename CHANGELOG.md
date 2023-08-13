@@ -1,3 +1,10 @@
+## [0.4.3](https://github.com/ilyydy/cf-openai/compare/v0.4.2...v0.4.3) (2023-08-13)
+
+### Bug Fixes
+
+* 发送前判断 url 是否为空 ([43f5537](https://github.com/ilyydy/cf-openai/commit/43f553790b4363add0d6f5fe08fa47154130883a))
+
+
 ## [0.4.2](https://github.com/ilyydy/cf-openai/compare/v0.4.1...v0.4.2) (2023-08-10)
 
 
