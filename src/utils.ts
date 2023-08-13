@@ -157,6 +157,9 @@ export type Logger = typeof logger
  * @see https://developer.work.weixin.qq.com/document/path/91770
  */
 export async function sendAlarmMsg(msg: string, url: string) {
+  if (!url) {
+    return genFail(`url 为空`)
+  }
   try {
     let body = {
       msg,
